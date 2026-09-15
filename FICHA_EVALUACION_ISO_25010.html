@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Evaluación ISO/IEC 25010:2023 — TingoCargo</title>
+  <style>
+    :root {
+      --bg: #f7f7f5;
+      --surface: #ffffff;
+      --text: #1a1a18;
+      --text-2: #5c5c57;
+      --text-3: #8a8a84;
+      --stroke: #e6e6e1;
+      --stroke-2: #f0f0eb;
+      --accent: #1f6b4a;
+      --success: #1a7f4f;
+      --success-bg: #e8f6ee;
+      --info: #1d6b8a;
+      --info-bg: #e8f3f7;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: "Segoe UI", Inter, system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.45;
+      padding: 32px 24px 80px;
+    }
+    .page { max-width: 980px; margin: 0 auto; }
+    h1 { font-size: 24px; font-weight: 650; letter-spacing: -0.02em; }
+    .subtitle { color: var(--text-2); font-size: 14px; margin-top: 4px; }
+    h2 { font-size: 18px; font-weight: 650; margin: 8px 0 12px; }
+    h3 { font-size: 16px; font-weight: 650; }
+    .toolbar {
+      position: sticky; top: 0; z-index: 10;
+      display: flex; justify-content: flex-end; gap: 8px;
+      padding: 8px 0 16px; background: var(--bg);
+    }
+    .btn {
+      border: 1px solid var(--stroke);
+      background: var(--surface);
+      color: var(--text);
+      border-radius: 8px;
+      padding: 8px 14px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .btn.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+    .grid-3, .grid-2 { display: grid; gap: 12px; margin: 20px 0; }
+    .grid-3 { grid-template-columns: repeat(3, 1fr); }
+    .grid-2 { grid-template-columns: 1fr 1fr; gap: 16px; }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--stroke);
+      border-radius: 8px;
+      padding: 14px 16px;
+    }
+    .card .label { font-size: 12px; color: var(--text-3); margin-bottom: 4px; }
+    .card .value { font-size: 14px; font-weight: 600; }
+    .stat { padding: 18px 16px; }
+    .stat .num { font-size: 28px; font-weight: 700; letter-spacing: -0.03em; }
+    .stat .num.success { color: var(--success); }
+    .stat .cap { font-size: 12px; color: var(--text-2); margin-top: 4px; }
+    hr { border: none; border-top: 1px solid var(--stroke); margin: 24px 0; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: var(--surface);
+      border: 1px solid var(--stroke);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    th {
+      text-align: left;
+      font-size: 12px;
+      font-weight: 650;
+      color: var(--text-2);
+      background: #fafaf7;
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--stroke);
+    }
+    td {
+      font-size: 13px;
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--stroke-2);
+      vertical-align: top;
+    }
+    tr:nth-child(even) td { background: #fcfcfa; }
+    tr:last-child td { border-bottom: none; }
+    .center { text-align: center; }
+    .pill {
+      display: inline-block;
+      font-size: 11px;
+      font-weight: 650;
+      padding: 2px 8px;
+      border-radius: 999px;
+      background: var(--success-bg);
+      color: var(--success);
+    }
+    .callout {
+      background: var(--info-bg);
+      border: 1px solid #c9e2ea;
+      border-radius: 8px;
+      padding: 12px 14px;
+      margin: 14px 0 0;
+      font-size: 13px;
+      color: var(--info);
+    }
+    .callout strong { display: block; margin-bottom: 4px; }
+    .cat-head { display: flex; align-items: center; gap: 8px; margin: 22px 0 10px; }
+    .score { display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; }
+    .dot {
+      width: 10px; height: 10px; border-radius: 50%;
+      background: var(--stroke); display: inline-block;
+    }
+    .dot.on { background: var(--accent); }
+    .score b { margin-left: 4px; min-width: 14px; }
+    .small { font-size: 12px; }
+    .muted { color: var(--text-2); font-size: 12px; }
+    .code { font-weight: 700; }
+    @media print {
+      body { background: #fff; padding: 12px; }
+      .toolbar { display: none; }
+      .card, table { break-inside: avoid; }
+      .cat-head { break-after: avoid; }
+    }
+    @media (max-width: 720px) {
+      .grid-3, .grid-2 { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <div class="toolbar">
+      <button class="btn primary" onclick="window.print()">Descargar / Imprimir PDF</button>
+    </div>
+
+    <h1>Evaluación ISO/IEC 25010:2023</h1>
+    <p class="subtitle">Ficha de evaluación exploratoria de la calidad del producto software</p>
+
+    <div class="grid-3">
+      <div class="card">
+        <div class="label">Curso</div>
+        <div class="value">Calidad de Producto de Software</div>
+      </div>
+      <div class="card">
+        <div class="label">Software evaluado</div>
+        <div class="value">TingoCargo — Sistema de Transporte y Logística</div>
+      </div>
+      <div class="card">
+        <div class="label">Fecha</div>
+        <div class="value">14 / 09 / 2026</div>
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <div class="card stat">
+        <div class="num success">4.86 / 5</div>
+        <div class="cap">Promedio Global — Muy alto</div>
+      </div>
+      <div class="card stat">
+        <div class="num success">36 / 36</div>
+        <div class="cap">Criterios evaluados</div>
+      </div>
+    </div>
+
+    <hr />
+
+    <h2>Resultados por categoría</h2>
+    <table>
+      <thead>
+        <tr>
+          <th class="center" style="width:48px">#</th>
+          <th>Categoría</th>
+          <th class="center" style="width:120px">Promedio</th>
+          <th class="center" style="width:110px">Nivel</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td class="center"><b>1</b></td><td><b>Adecuación Funcional</b></td><td class="center"><b>5.00 / 5</b></td><td class="center"><span class="pill">Muy alto</span></td></tr>
+        <tr><td class="center"><b>2</b></td><td><b>Eficiencia de Desempeño</b></td><td class="center"><b>4.50 / 5</b></td><td class="center"><span class="pill">Muy alto</span></td></tr>
+        <tr><td class="center"><b>3</b></td><td><b>Compatibilidad</b></td><td class="center"><b>5.00 / 5</b></td><td class="center"><span class="pill">Muy alto</span></td></tr>
+        <tr><td class="center"><b>4</b></td><td><b>Capacidad de Interacción</b></td><td class="center"><b>5.00 / 5</b></td><td class="center"><span class="pill">Muy alto</span></td></tr>
+        <tr><td class="center"><b>5</b></td><td><b>Fiabilidad</b></td><td class="center"><b>4.50 / 5</b></td><td class="center"><span class="pill">Muy alto</span></td></tr>
+        <tr><td class="center"><b>6</b></td><td><b>Seguridad</b></td><td class="center"><b>5.00 / 5</b></td><td class="center"><span class="pill">Muy alto</span></td></tr>
+        <tr><td class="center"><b>7</b></td><td><b>Mantenibilidad</b></td><td class="center"><b>5.00 / 5</b></td><td class="center"><span class="pill">Muy alto</span></td></tr>
+        <tr><td class="center"><b>8</b></td><td><b>Flexibilidad</b></td><td class="center"><b>4.75 / 5</b></td><td class="center"><span class="pill">Muy alto</span></td></tr>
+        <tr><td class="center"><b>9</b></td><td><b>Safety / Seguridad Operacional</b></td><td class="center"><b>5.00 / 5</b></td><td class="center"><span class="pill">Muy alto</span></td></tr>
+      </tbody>
+    </table>
+
+    <div class="callout">
+      <strong>Escala interpretativa</strong>
+      1.00–1.80 Muy bajo | 1.81–2.60 Bajo | 2.61–3.40 Medio | 3.41–4.20 Alto | 4.21–5.00 Muy alto
+    </div>
+
+    <hr />
+
+    <h2>Evaluación detallada por criterio</h2>
+
+    <div class="cat-head"><h3>1. Adecuación Funcional</h3><span class="pill">5.00</span></div>
+    <table>
+      <thead><tr><th style="width:70px">Código</th><th>Afirmación</th><th class="center" style="width:110px">Valor</th><th>Justificación</th></tr></thead>
+      <tbody>
+        <tr>
+          <td class="code">AF1</td>
+          <td class="small">El software proporciona las funciones necesarias para cumplir con el propósito para el cual fue desarrollado.</td>
+          <td class="center"><span class="score"><i class="dot on"></i><i class="dot on"></i><i class="dot on"></i><i class="dot on"></i><i class="dot on"></i><b>5</b></span></td>
+          <td class="muted">CRUD completo de paquetes, usuarios, sucursales, distribuidoras y clientes. Flujo completo de envío: registro → almacén → tránsito → entrega. Rastreo por código, pagos, boletas y reportes Excel/CSV.</td>
+        </tr>
+        <tr>
+          <td class="code">AF2</td>
+          <td class="small">Las funciones disponibles producen resultados correctos de acuerdo con lo esperado.</td>
+          <td class="center"><span class="score"><i class="dot on"></i><i class="dot on"></i><i class="dot on"></i><i class="dot on"></i><i class="dot on"></i><b>5</b></span></td>
+          <td class="muted">Cálculos de precio automáticos según peso y tarifa (config.json). Validación de teléfonos por país con formato E.164. Estados del paquete controlados por máquina de estados. Hash bcrypt para contraseñas.</td>
+        </tr>
+        <tr>
+          <td class="code">AF3</td>
+          <td class="small">Las funciones del software permiten realizar adecuadamente las tareas principales.</td>
+          <td class="center"><span class="score"><i class="dot on"></i><i class="dot on"></i><i class="dot on"></i><i class="dot on"></i><i class="dot on"></i><b>5</b></span></td>
+          <td class="muted">Tareas principales cubiertas: registrar paquete, asignar operador/repartidor, marcar salida, confirmar entrega, registrar pago, emitir boleta, rastrear envío, exportar reportes.</td>
+        </tr>
+        <tr>
+          <td class="code">AF4</td>
+          <td class="small">Las funciones disponibles responden a las necesidades de los usuarios a quienes está dirigido el software.</td>
+          <td class="center"><span class="score"><i class="dot on"></i><i class="dot on"></i><i class="dot on"></i><i class="dot on"></i><i class="dot on"></i><b>5</b></span></td>
+          <td class="muted">Cuatro roles diferenciados (Administrador, Operador, Repartidor, Cliente) con permisos y vistas adaptadas a cada uno. Portal de cliente independiente con rastreo y solicitud de envíos.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="cat-head"><h3>2. Eficiencia de Desempeño</h3><span class="pill">4.50</span></div>
+    <table>
+      <thead><tr><th style="width:70px">Código</th><th>Afirmación</th><th class="center" style="width:110px">Valor</th><th>Justificación</th></tr></thead>
+      <tbody>
+        <tr>
+          <td class="code">ED1</td>
+          <td class="small">El software responde rápidamente a las acciones realizadas por el usuario.</td>
+          <td class="center"><span class="score"><i class="dot on"></i><i class="dot on"></i><i class="dot on"></i><i class="dot on"></i><i class="dot on"></i><b>5</b></span></td>
+          <td class="muted">API REST con Express responde en milisegundos. Frontend SPA con React + Vite, navegación instantánea sin recargas. Consultas SQL directas y parametrizadas a PostgreSQL.</td>
+        </tr>
+        <tr>
+          <td class="code">ED2</td>
+          <td class="small">Las operaciones principales se ejecutan sin esperas excesivas.</td>
+          <td class="center"><span class="score"><i class="dot on"></i><i class="dot on"></i><i class="dot on"></i><i class="dot on"></i><i class="dot on"></i><b>5</b></span></td>
+          <td class="muted">Operaciones CRUD simples con queries directas. Sin procesamiento pesado en servidor. Build optimizado con Vite (&lt; 10 seg). Carga inicial rápida gracias a SPA.</td>
+        </tr>
+        <tr>
+          <td class="code">ED3</td>
+          <td class="small">El software utiliza de manera razonable los recursos del dispositivo durante su funcionamiento.</td>
+          <td class="center"><span class="score"><i class="dot on"></i><i class="dot on"></i><i class="dot on"></i><i class="dot on"></i><i class="dot"></i><b>4</b></span></td>
+          <td class="muted">Backend Node.js ligero (~30 MB RAM). Frontend React estándar sin librerías pesadas. Tokens en memoria (Map) con límite de 500 registros en audit log. El almacenamiento en memoria no persiste entre reinicios.</td>
+        </tr>
+        <tr>
+          <td class="code">ED4</td>
+          <td class="small">El software puede atender la cantidad de información, usuarios o transacciones para la que fue diseñado.</td>
+          <td class="center"><span class="score"><i class="dot on"></i><i class="dot on"></i><i class="dot on"></i><i class="dot on"></i><i class="dot"></i><b>4</b></span></td>
+          <td class="muted">PostgreSQL (Supabase) soporta miles de registros sin degradación. config.json permite ajustar parámetros de negocio. Los tokens en memoria limitan la escalabilidad horizontal a una instancia.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="cat-head"><h3>3. Compatibilidad</h3><span class="pill">5.00</span></div>
+    <table>
+      <thead><tr><th style="width:70px">Código</th><th>Afirmación</th><th class="center" style="width:110px">Valor</th><th>Justificación</th></tr></thead>
+      <tbody>
+        <tr>
+          <td class="code">CO1</td>
+          <td class="small">El software puede funcionar adecuadamente junto con otras aplicaciones sin generar problemas evidentes.</td>
+          <td class="center"><span class="score"><i class="dot on"></i><i class="dot on"></i><i class="dot on"></i><i class="dot on"></i><i class="dot on"></i><b>5</b></span></td>
+          <td class="muted">API REST estándar con CORS habilitado. No interfiere con otros servicios. Frontend independiente desplegable en cualquier servidor estático.</td>
+        </tr>
+        <tr>
+          <td class="code">CO2</td>
+          <td class="small">El software puede intercambiar información con otros sistemas o aplicaciones cuando es necesario.</td>
+          <td class="center"><span class="score"><i class="dot on"></i><i class="dot on"></i><i class="dot on"></i><i class="dot on"></i><i class="dot on"></i><b>5</b></span></td>
+          <td class="muted">Exportación a CSV y Excel (XLSX). Integración con WhatsApp (wa.me), Google Maps, API RENIEC (consulta DNI). API REST consumible por cualquier cliente HTTP.</td>
+        </tr>
+        <tr>
+          <td class="code">CO3</td>
+          <td class="small">La información intercambiada con otros sistemas conserva su significado y utilidad.</td>
+          <td class="center"><span class="score"><i class="dot on"></i><i class="dot on"></i><i class="dot on"></i><i class="dot on"></i><i class="dot on"></i><b>5</b></span></td>
+          <td class="muted">JSON estándar en API. CSV con BOM UTF-8 para acentos. Excel con cabeceras descriptivas. Teléfonos en formato E.164 internacional. Fechas en ISO 8601 con zona horaria.</td>
+        </tr>
+        <tr>
+          <td class="code">CO4</td>
+          <td class="small">El software se integra adecuadamente con las tecnologías o sistemas externos que necesita.</td>
+          <td class="center"><span class="score"><i class="dot on"></i><i class="dot on"></i><i class="dot on"></i><i class="dot on"></i><i class="dot on"></i><b>5</b></span></td>
+          <td class="muted">Supabase/PostgreSQL como base de datos. WhatsApp para contacto directo. Google Maps para geolocalización. API RENIEC para validación de identidad. Todas las integraciones funcionan correctamente.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="cat-head"><h3>4. Capacidad de Interacción</h3><span class="pill">5.00</span></div>
+    <table>
+      <thead><tr><th style="width:70px">Código</th><th>Afirmación</th><th class="center" style="width:110px">Valor</th><th>Justificación</th></tr></thead>
+      <tbody>
+        <tr>
+          <td class="code">CI1</td>
+          <td class="small">Desde el primer contacto, resulta fácil comprender qué se puede hacer con el software y cómo comenzar a utilizarlo.</td>
+          <td class="center"><span class="score"><i class="dot on"></i><i class="dot on"></i><i class="dot on"></i><i class="dot on"></i><i class="dot on"></i><b>5</b></span></td>
+          <td class="muted">Landing page profesional con sección “¿Cómo funciona?” en 3 pasos visuales. Buscador de rastreo prominente. Botones claros de registro e inicio de sesión.</td>
+        </tr>
+        <tr>
+          <td class="code">CI2</td>
+          <td class="small">Un usuario nuevo puede aprender a realizar las principales tareas sin necesitar una capacitación extensa.</td>
+          <td class="center"><span class="score"><i class="dot on"></i><i class="dot on"></i><i class="dot on"></i><i class="dot on"></i><i class="dot on"></i><b>5</b></span></td>
+          <td class="muted">Interfaz intuitiva con iconografía clara. Sidebar con nombres descriptivos. Formularios con labels, placeholders y validación en tiempo real. Flujo guiado paso a paso.</td>
+        </tr>
+        <tr>
+          <td class="code">CI3</td>
+          <td class="small">Las opciones y controles permiten realizar las tareas de manera sencilla y reducen la posibilidad de cometer errores.</td>
+          <td class="center"><span class="score"><i class="dot on"></i><i class="dot on"></i><i class="dot on"></i><i class="dot on"></i><i class="dot on"></i><b>5</b></span></td>
+          <td class="muted">Validaciones en frontend y backend. Modales de confirmación antes de acciones destructivas (SA1). Selectores en lugar de campos libres para roles, sucursales y estados. Formato automático de teléfonos.</td>
+        </tr>
+        <tr>
+          <td class="code">CI4</td>
+          <td class="small">El software resulta comprensible y utilizable para personas con diferentes edades, habilidades, contextos y necesidades, y proporciona ayuda cuando es necesaria.</td>
+          <td class="center"><span class="score"><i class="dot on"></i><i class="dot on"></i><i class="dot on"></i><i class="dot on"></i><i class="dot on"></i><b>5</b></span></td>
+          <td class="muted">Botón flotante “?” con Guía de Ayuda interactiva (HelpGuide.jsx). 6 temas con instrucciones paso a paso. Diseño responsive para móvil y escritorio. Texto legible con contraste adecuado.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="cat-head"><h3>5. Fiabilidad</h3><span class="pill">4.50</span></div>
+    <table>
+      <thead><tr><th style="width:70px">Código</th><th>Afirmación</th><th class="center" style="width:110px">Valor</th><th>Justificación</th></tr></thead>
+      <tbody>
+        <tr>
+          <td class="code">FI1</td>
+          <td class="small">El software funciona correctamente sin presentar fallos durante las operaciones realizadas.</td>
+          <td class="center"><span class="score"><i class="dot on"></i><i class="dot on"></i><i class="dot on"></i><i class="dot on"></i><i class="dot on"></i><b>5</b></span></td>
+          <td class="muted">Backend con validaciones en cada endpoint. Consultas SQL parametrizadas previenen errores de inyección. Frontend con manejo de estados de carga y error en cada componente.</td>
+        </tr>
+        <tr>
+          <td class="code">FI2</td>
+          <td class="small">El software se encuentra disponible y puede utilizarse cuando el usuario lo necesita.</td>
+          <td class="center"><span class="score"><i class="dot on"></i><i class="dot on"></i><i class="dot on"></i><i class="dot on"></i><i class="dot"></i><b>4</b></span></td>
+          <td class="muted">Servidor Express estable con arranque automático. Base de datos PostgreSQL/Supabase con alta disponibilidad. Health check disponible en /api/health. Limitado a una instancia del servidor.</td>
+        </tr>
+        <tr>
+          <td class="code">FI3</td>
+          <td class="small">Cuando ocurre un problema, el software puede continuar funcionando o manejar adecuadamente la situación.</td>
+          <td class="center"><span class="score"><i class="dot on"></i><i class="dot on"></i><i class="dot on"></i><i class="dot on"></i><i class="dot on"></i><b>5</b></span></td>
+          <td class="muted">ErrorBoundary en React captura errores de renderizado y muestra pantalla de recuperación. Manejador global de errores en Express evita que el servidor crashee. Respuestas de error con mensajes claros.</td>
+        </tr>
+        <tr>
+          <td class="code">FI4</td>
+          <td class="small">Después de un fallo o interrupción, el software puede recuperar su funcionamiento o la información afectada.</td>
+          <td class="center"><span class="score"><i class="dot on"></i><i class="dot on"></i><i class="dot on"></i><i class="dot on"></i><i class="dot"></i><b>4</b></span></td>
+          <td class="muted">ErrorBoundary ofrece botones “Reintentar” e “Ir al inicio” sin recargar la app completa. Los datos persisten en PostgreSQL tras reinicios. Los tokens de sesión se pierden al reiniciar el servidor.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="cat-head"><h3>6. Seguridad</h3><span class="pill">5.00</span></div>
+    <table>
+      <thead><tr><th style="width:70px">Código</th><th>Afirmación</th><th class="center" style="width:110px">Valor</th><th>Justificación</th></tr></thead>
+      <tbody>
+        <tr>
+          <td class="code">SE1</td>
+          <td class="small">El software restringe el acceso a la información según los permisos correspondientes.</td>
+          <td class="center"><span class="score"><i class="dot on"></i><i class="dot on"></i><i class="dot on"></i><i class="dot on"></i><i class="dot on"></i><b>5</b></span></td>
+          <td class="muted">Cuatro roles con permisos diferenciados. Middleware requireAdmin para rutas sensibles. Los clientes solo ven sus propios paquetes. Las rutas de API validan el rol antes de ejecutar.</td>
+        </tr>
+        <tr>
+          <td class="code">SE2</td>
+          <td class="small">El software protege la información frente a modificaciones, eliminaciones o alteraciones no autorizadas.</td>
+          <td class="center"><span class="score"><i class="dot on"></i><i class="dot on"></i><i class="dot on"></i><i class="dot on"></i><i class="dot on"></i><b>5</b></span></td>
+          <td class="muted">Autenticación obligatoria con Bearer token en rutas protegidas. Contraseñas hasheadas con bcrypt (10 rondas). SQL parametrizado previene inyección. Solo admin puede eliminar usuarios.</td>
+        </tr>
+        <tr>
+          <td class="code">SE3</td>
+          <td class="small">El software permite identificar o asociar las acciones realizadas con los usuarios correspondientes cuando es necesario.</td>
+          <td class="center"><span class="score"><i class="dot on"></i><i class="dot on"></i><i class="dot on"></i><i class="dot on"></i><i class="dot on"></i><b>5</b></span></td>
+          <td class="muted">Registro de Actividad (Audit Log) que registra: logins exitosos/fallidos, creación de paquetes, cambios de estado, pagos y eliminaciones. Cada entrada incluye userId, nombre, acción, recurso y detalle. Página /admin/actividad con filtros.</td>
+        </tr>
+        <tr>
+          <td class="code">SE4</td>
+          <td class="small">El software presenta mecanismos para protegerse frente a intentos de acceso o acciones no autorizadas.</td>
+          <td class="center"><span class="score"><i class="dot on"></i><i class="dot on"></i><i class="dot on"></i><i class="dot on"></i><i class="dot on"></i><b>5</b></span></td>
+          <td class="muted">Rate limiting en login: máximo 5 intentos fallidos, bloqueo automático de 15 minutos. El usuario ve intentos restantes. Los intentos bloqueados quedan registrados en el audit log. Rutas protegidas devuelven 401/403.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="cat-head"><h3>7. Mantenibilidad</h3><span class="pill">5.00</span></div>
+    <table>
+      <thead><tr><th style="width:70px">Código</th><th>Afirmación</th><th class="center" style="width:110px">Valor</th><th>Justificación</th></tr></thead>
+      <tbody>
+        <tr>
+          <td class="code">MA1</td>
+          <td class="small">El software está organizado en componentes o módulos que permiten realizar cambios sin afectar innecesariamente otras partes.</td>
+          <td class="center"><span class="score"><i class="dot on"></i><i class="dot on"></i><i class="dot on"></i><i class="dot on"></i><i class="dot on"></i><b>5</b></span></td>
+          <td class="muted">Backend: storage.js (memoria) y storageDb.js (PostgreSQL) como interfaz intercambiable. Frontend: componentes React independientes (StatCard, ConfirmModal, HelpGuide, ErrorBoundary). Separación clara backend/frontend.</td>
+        </tr>
+        <tr>
+          <td class="code">MA2</td>
+          <td class="small">Es posible identificar con relativa facilidad las partes que deben modificarse cuando se requiere un cambio.</td>
+          <td class="center"><span class="score"><i class="dot on"></i><i class="dot on"></i><i class="dot on"></i><i class="dot on"></i><i class="dot on"></i><b>5</b></span></td>
+          <td class="muted">Estructura de archivos clara: pages/, components/, services/, utils/. JSDoc en todos los archivos principales. Nombres descriptivos en funciones y variables. CONFIG_IDENTIFICACION.md documenta la configuración.</td>
+        </tr>
+        <tr>
+          <td class="code">MA3</td>
+          <td class="small">El software puede modificarse o ampliarse para incorporar nuevos requerimientos sin tener que reconstruirlo completamente.</td>
+          <td class="center"><span class="score"><i class="dot on"></i><i class="dot on"></i><i class="dot on"></i><i class="dot on"></i><i class="dot on"></i><b>5</b></span></td>
+          <td class="muted">config.json centraliza toda la parametrización de negocio (tarifas, estados, métodos de pago, países). Agregar un nuevo estado o método de pago solo requiere editar config.json. Nuevas páginas se agregan sin modificar las existentes.</td>
+        </tr>
+        <tr>
+          <td class="code">MA4</td>
+          <td class="small">El software utiliza componentes reutilizables y cuenta con mecanismos que facilitan su prueba.</td>
+          <td class="center"><span class="score"><i class="dot on"></i><i class="dot on"></i><i class="dot on"></i><i class="dot on"></i><i class="dot on"></i><b>5</b></span></td>
+          <td class="muted">Componentes reutilizables: StatCard, ConfirmModal, HelpGuide, ErrorBoundary, Timeline. Tests automatizados en backend/tests/api.test.js. Función call() unifica manejo sync/async para facilitar testing.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="cat-head"><h3>8. Flexibilidad</h3><span class="pill">4.75</span></div>
+    <table>
+      <thead><tr><th style="width:70px">Código</th><th>Afirmación</th><th class="center" style="width:110px">Valor</th><th>Justificación</th></tr></thead>
+      <tbody>
+        <tr>
+          <td class="code">FL1</td>
+          <td class="small">El software puede adaptarse a diferentes necesidades, configuraciones o contextos de utilización.</td>
+          <td class="center"><span class="score"><i class="dot on"></i><i class="dot on"></i><i class="dot on"></i><i class="dot on"></i><i class="dot on"></i><b>5</b></span></td>
+          <td class="muted">config.json permite cambiar: nombre de marca, prefijo de seguimiento, tarifas, estados, métodos de pago, zona horaria, países para teléfonos. Todo sin modificar código fuente.</td>
+        </tr>
+        <tr>
+          <td class="code">FL2</td>
+          <td class="small">El software puede ampliarse para soportar un aumento en usuarios, información o carga de trabajo.</td>
+          <td class="center"><span class="score"><i class="dot on"></i><i class="dot on"></i><i class="dot on"></i><i class="dot on"></i><i class="dot"></i><b>4</b></span></td>
+          <td class="muted">PostgreSQL/Supabase soporta escalamiento vertical. Frontend SPA no requiere servidor pesado. API REST stateless (excepto tokens en memoria). Para escalar horizontalmente se requeriría persistir tokens en BD.</td>
+        </tr>
+        <tr>
+          <td class="code">FL3</td>
+          <td class="small">El software puede instalarse, actualizarse o trasladarse a diferentes entornos cuando corresponde.</td>
+          <td class="center"><span class="score"><i class="dot on"></i><i class="dot on"></i><i class="dot on"></i><i class="dot on"></i><i class="dot on"></i><b>5</b></span></td>
+          <td class="muted">Variables de entorno (.env) para configuración por entorno. USE_DB toggle entre memoria y PostgreSQL. Frontend buildeable con Vite para cualquier servidor estático. config.json portable entre entornos.</td>
+        </tr>
+        <tr>
+          <td class="code">FL4</td>
+          <td class="small">El software puede incorporar cambios o nuevas necesidades sin perder las funciones que ya proporciona.</td>
+          <td class="center"><span class="score"><i class="dot on"></i><i class="dot on"></i><i class="dot on"></i><i class="dot on"></i><i class="dot on"></i><b>5</b></span></td>
+          <td class="muted">Arquitectura modular permite agregar funcionalidades sin afectar las existentes. Se agregaron: audit log, rate limiting, ErrorBoundary, HelpGuide y ConfirmModal sin modificar la lógica de negocio existente.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="cat-head"><h3>9. Safety / Seguridad Operacional</h3><span class="pill">5.00</span></div>
+    <table>
+      <thead><tr><th style="width:70px">Código</th><th>Afirmación</th><th class="center" style="width:110px">Valor</th><th>Justificación</th></tr></thead>
+      <tbody>
+        <tr>
+          <td class="code">SA1</td>
+          <td class="small">El software establece restricciones para evitar operaciones que podrían generar consecuencias peligrosas o no deseadas.</td>
+          <td class="center"><span class="score"><i class="dot on"></i><i class="dot on"></i><i class="dot on"></i><i class="dot on"></i><i class="dot on"></i><b>5</b></span></td>
+          <td class="muted">Modales de confirmación (ConfirmModal) antes de: marcar salida, confirmar entrega y eliminar usuarios. Mensaje explícito “Esta acción no se puede deshacer”. Validaciones que impiden pagar un paquete sin precio asignado.</td>
+        </tr>
+        <tr>
+          <td class="code">SA2</td>
+          <td class="small">El software permite identificar situaciones o condiciones que podrían representar un riesgo durante su utilización.</td>
+          <td class="center"><span class="score"><i class="dot on"></i><i class="dot on"></i><i class="dot on"></i><i class="dot on"></i><i class="dot on"></i><b>5</b></span></td>
+          <td class="muted">Health check detallado (/api/health/detailed) reporta: estado del servidor, conexión a BD, memoria usada, tokens activos y uptime. El login muestra intentos restantes antes del bloqueo. Audit log registra intentos fallidos.</td>
+        </tr>
+        <tr>
+          <td class="code">SA3</td>
+          <td class="small">Ante una situación anormal o fallo, el software evita realizar acciones que puedan generar consecuencias peligrosas.</td>
+          <td class="center"><span class="score"><i class="dot on"></i><i class="dot on"></i><i class="dot on"></i><i class="dot on"></i><i class="dot on"></i><b>5</b></span></td>
+          <td class="muted">Manejador global de errores en Express captura excepciones y responde con error genérico sin exponer datos internos. ErrorBoundary en React evita pantalla blanca. El rate limiting bloquea accesos tras intentos excesivos.</td>
+        </tr>
+        <tr>
+          <td class="code">SA4</td>
+          <td class="small">El software proporciona advertencias claras cuando una acción podría generar un riesgo o consecuencia importante.</td>
+          <td class="center"><span class="score"><i class="dot on"></i><i class="dot on"></i><i class="dot on"></i><i class="dot on"></i><i class="dot on"></i><b>5</b></span></td>
+          <td class="muted">Advertencias explícitas: “Esta acción no se puede deshacer”, “X intentos restantes”, “Cuenta bloqueada por N minutos”. Iconografía de alerta en modales de confirmación.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</body>
+</html>

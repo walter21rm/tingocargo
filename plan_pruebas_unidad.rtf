@@ -1,0 +1,1098 @@
+{\rtf1\ansi\deff0
+{\fonttbl{\f0 Consolas;}{\f1 Arial;}}
+\paperw12240\paperh15840\margl1080\margr1080\margt1080\margb1080
+\f1\fs24
+
+\pard\qc\b\fs28 PLAN DE PRUEBAS UNITARIAS\b0\par
+\pard\qc\fs20 Sistema de Transporte y Log\'edstica\par
+\pard\qc\fs20 Archivo de m\'e9todos: backend/src/server.js\par
+\pard\qc\fs20 Archivo de pruebas: backend/tests/api.test.js\par
+\pard\par\par
+
+\pard\b\fs24 a. M\'e9todos a probar (c\'f3digo de m\'e9todos)\b0\par\par
+
+\pard\li200\f1\fs20\b M\'e9todo 1: sanitizeUser (Funci\'f3n auxiliar)\b0\par
+\pard\li200\f0\fs16
+const sanitizeUser = (user, roleName) => (\{\par
+  id: user.id,\par
+  nombre: user.nombre,\par
+  email: user.email,\par
+  rolId: user.rol_id || user.rolId || null,\par
+  roleName: roleName || null,\par
+  sucursalId: user.sucursal_id || user.sucursalId || null,\par
+  activo: user.activo\par
+\});\par
+\pard\f1\fs20\par
+
+\pard\li200\f1\fs20\b M\'e9todo 2: requireAdmin (Middleware de autorizaci\'f3n)\b0\par
+\pard\li200\f0\fs16
+const requireAdmin = (req, res, next) => \{\par
+  const roleName = req.authUser?.roleName;\par
+  if (roleName !== "Administrador") \{\par
+    return res.status(403).json(\{ error: "Solo administrador" \});\par
+  \}\par
+  return next();\par
+\};\par
+\pard\f1\fs20\par
+
+\pard\li200\f1\fs20\b M\'e9todo 3: isPublicRoute (Funci\'f3n auxiliar)\b0\par
+\pard\li200\f0\fs16
+const isPublicRoute = (req) => \{\par
+  if (!req.path.startsWith("/api")) return true;\par
+  if (req.path === "/api/health") return true;\par
+  if (req.path === "/api/auth/login") return true;\par
+  return req.path.startsWith("/api/tracking/");\par
+\};\par
+\pard\f1\fs20\par
+
+\pard\li200\f1\fs20\b M\'e9todo 4: Middleware de autenticaci\'f3n (app.use)\b0\par
+\pard\li200\f0\fs16
+app.use((req, res, next) => \{\par
+  if (isPublicRoute(req)) return next();\par
+  const authHeader = req.headers.authorization || "";\par
+  const token = authHeader.startsWith("Bearer ")\par
+    ? authHeader.slice(7).trim()\par
+    : "";\par
+  if (!token || !authTokens.has(token)) \{\par
+    return res.status(401).json(\{ error: "No autorizado" \});\par
+  \}\par
+  req.authUser = authTokens.get(token);\par
+  return next();\par
+\});\par
+\pard\f1\fs20\par
+
+\pard\li200\f1\fs20\b M\'e9todo 5: formatDate (Funci\'f3n auxiliar)\b0\par
+\pard\li200\f0\fs16
+const formatDate = (value) => \{\par
+  if (!value) return "";\par
+  const date = new Date(value);\par
+  if (Number.isNaN(date.getTime())) return "";\par
+  return new Intl.DateTimeFormat("es-PE", \{\par
+    day: "2-digit",\par
+    month: "2-digit",\par
+    year: "numeric",\par
+    hour: "2-digit",\par
+    minute: "2-digit",\par
+    timeZone: "America/Lima",\par
+    hour12: true\par
+  \}).format(date);\par
+\};\par
+\pard\f1\fs20\par
+
+\pard\li200\f1\fs20\b M\'e9todo 6: escapeCsv (Funci\'f3n auxiliar)\b0\par
+\pard\li200\f0\fs16
+const escapeCsv = (value) => \{\par
+  if (value === null || value === undefined) return "";\par
+  const str = String(value);\par
+  return `"$\{str.replace(/"/g, '""')\}"`;\par
+\};\par
+\pard\f1\fs20\par
+
+\pard\li200\f1\fs20\b M\'e9todo 7: ensureRoles (Inicializaci\'f3n de roles)\b0\par
+\pard\li200\f0\fs16
+const ensureRoles = async () => \{\par
+  if (!repo.listRoles || !repo.createRole) return;\par
+  const required = ["Administrador", "Operador log\'edstico", "Repartidor"];\par
+  const roles = await call(repo.listRoles);\par
+  const existing = new Set(roles.map((role) => role.nombre));\par
+  for (const name of required) \{\par
+    if (!existing.has(name)) \{\par
+      await call(repo.createRole, name);\par
+    \}\par
+  \}\par
+\};\par
+\pard\f1\fs20\par
+
+\pard\li200\f1\fs20\b M\'e9todo 8: ensureAdminUser (Inicializaci\'f3n de admin)\b0\par
+\pard\li200\f0\fs16
+const ensureAdminUser = async () => \{\par
+  try \{\par
+    if (!repo.getUserByEmail || !repo.createUser || !repo.listRoles) return;\par
+    await ensureRoles();\par
+    const existing = await call(repo.getUserByEmail, seedAdminEmail);\par
+    if (existing) return;\par
+    let roles = await call(repo.listRoles);\par
+    let adminRole =\par
+      roles.find((role) => role.nombre === "Administrador") || roles[0];\par
+    if (!adminRole && repo.createRole) \{\par
+      try \{\par
+        await call(repo.createRole, "Administrador");\par
+        roles = await call(repo.listRoles);\par
+        adminRole =\par
+          roles.find((role) => role.nombre === "Administrador") || roles[0];\par
+      \} catch (err) \{\par
+        console.error("No se pudo crear el rol Administrador:", err.message);\par
+      \}\par
+    \}\par
+    const passwordHash = await bcrypt.hash(seedAdminPass, 10);\par
+    await call(repo.createUser, \{\par
+      nombre: seedAdminName,\par
+      email: seedAdminEmail,\par
+      rolId: adminRole?.id,\par
+      sucursalId: null,\par
+      activo: true,\par
+      passwordHash\par
+    \});\par
+  \} catch (err) \{\par
+    console.error("No se pudo crear el admin inicial:", err.message);\par
+  \}\par
+\};\par
+\pard\f1\fs20\par
+
+\pard\li200\f1\fs20\b M\'e9todo 9: GET /api/health\b0\par
+\pard\li200\f0\fs16
+app.get("/api/health", async (req, res) => \{\par
+  res.json(await call(repo.getHealth));\par
+\});\par
+\pard\f1\fs20\par
+
+\pard\li200\f1\fs20\b M\'e9todo 10: POST /api/auth/login\b0\par
+\pard\li200\f0\fs16
+app.post("/api/auth/login", (req, res) => \{\par
+  const \{ usuario, password \} = req.body || \{\};\par
+  if (!usuario || !password) \{\par
+    return res.status(400).json(\{ error: "Usuario y contrase\'f1a requeridos" \});\par
+  \}\par
+  if (usuario === adminUser && password === adminPass) \{\par
+    const token = crypto.randomUUID();\par
+    authTokens.set(token, \{\par
+      id: "admin-env",\par
+      nombre: "Administrador Sistema",\par
+      email: adminUser,\par
+      rolId: null,\par
+      roleName: "Administrador",\par
+      sucursalId: null,\par
+      activo: true\par
+    \});\par
+    return res.json(\{\par
+      token,\par
+      user: \{\par
+        id: "admin-env",\par
+        nombre: "Administrador Sistema",\par
+        email: adminUser,\par
+        rolId: null,\par
+        roleName: "Administrador",\par
+        sucursalId: null,\par
+        activo: true\par
+      \}\par
+    \});\par
+  \}\par
+  return call(repo.getUserByEmail, usuario)\par
+    .then(async (user) => \{\par
+      if (!user || user.activo === false) \{\par
+        throw new Error("Credenciales inv\'e1lidas");\par
+      \}\par
+      const ok = await bcrypt.compare(\par
+        password,\par
+        user.password_hash || user.passwordHash || ""\par
+      );\par
+      if (!ok) \{\par
+        throw new Error("Credenciales inv\'e1lidas");\par
+      \}\par
+      const roleId = user.rol_id || user.rolId;\par
+      const role = roleId ? await call(repo.getRoleById, roleId) : null;\par
+      const roleName = role?.nombre || null;\par
+      const token = crypto.randomUUID();\par
+      authTokens.set(token, sanitizeUser(user, roleName));\par
+      return res.json(\{ token, user: sanitizeUser(user, roleName) \});\par
+    \})\par
+    .catch(() => res.status(401).json(\{ error: "Credenciales inv\'e1lidas" \}));\par
+\});\par
+\pard\f1\fs20\par
+
+\pard\li200\f1\fs20\b M\'e9todo 11: GET /api/clients\b0\par
+\pard\li200\f0\fs16
+app.get("/api/clients", async (req, res) => \{\par
+  res.json(await call(repo.listClients));\par
+\});\par
+\pard\f1\fs20\par
+
+\pard\li200\f1\fs20\b M\'e9todo 12: POST /api/clients\b0\par
+\pard\li200\f0\fs16
+app.post("/api/clients", async (req, res) => \{\par
+  const client = await call(repo.createClient, req.body);\par
+  res.status(201).json(client);\par
+\});\par
+\pard\f1\fs20\par
+
+\pard\li200\f1\fs20\b M\'e9todo 13: GET /api/packages\b0\par
+\pard\li200\f0\fs16
+app.get("/api/packages", async (req, res) => \{\par
+  const \{ status \} = req.query;\par
+  res.json(await call(repo.listPackages, status));\par
+\});\par
+\pard\f1\fs20\par
+
+\pard\li200\f1\fs20\b M\'e9todo 14: GET /api/packages/expanded\b0\par
+\pard\li200\f0\fs16
+app.get("/api/packages/expanded", async (req, res) => \{\par
+  const \{ status \} = req.query;\par
+  if (req.authUser?.roleName === "Repartidor" && repo.listPackagesByCourier) \{\par
+    return res.json(await call(repo.listPackagesByCourier, req.authUser.id));\par
+  \}\par
+  res.json(await call(repo.listPackagesDetailed, status));\par
+\});\par
+\pard\f1\fs20\par
+
+\pard\li200\f1\fs20\b M\'e9todo 15: GET /api/packages/:id\b0\par
+\pard\li200\f0\fs16
+app.get("/api/packages/:id", async (req, res) => \{\par
+  const pkg = await call(repo.getPackageDetailsById, req.params.id);\par
+  if (!pkg) \{\par
+    return res.status(404).json(\{ error: "Paquete no encontrado" \});\par
+  \}\par
+  if (\par
+    req.authUser?.roleName === "Repartidor" &&\par
+    pkg.repartidor?.id !== req.authUser.id\par
+  ) \{\par
+    return res.status(403).json(\{ error: "No autorizado" \});\par
+  \}\par
+  res.json(pkg);\par
+\});\par
+\pard\f1\fs20\par
+
+\pard\li200\f1\fs20\b M\'e9todo 16: POST /api/packages\b0\par
+\pard\li200\f0\fs16
+app.post("/api/packages", async (req, res) => \{\par
+  if (req.authUser?.roleName === "Repartidor") \{\par
+    return res.status(403).json(\{ error: "No autorizado" \});\par
+  \}\par
+  const \{\par
+    remitenteId,\par
+    destinatarioId,\par
+    sucursalOrigenId,\par
+    destinoTexto,\par
+    operadorId,\par
+    repartidorId\par
+  \} = req.body;\par
+  if (!remitenteId || !destinatarioId || !sucursalOrigenId || !destinoTexto) \{\par
+    return res.status(400).json(\{\par
+      error:\par
+        "remitenteId, destinatarioId, sucursalOrigenId y destinoTexto son requeridos"\par
+    \});\par
+  \}\par
+  const remitente = await call(repo.getDistributorById, remitenteId);\par
+  const destinatario = await call(repo.getClientById, destinatarioId);\par
+  if (!remitente || !destinatario) \{\par
+    return res.status(400).json(\{ error: "Distribuidora o cliente inv\'e1lido" \});\par
+  \}\par
+  const origen = await call(repo.getBranchById, sucursalOrigenId);\par
+  if (!origen) \{\par
+    return res.status(400).json(\{ error: "Sucursal inv\'e1lida" \});\par
+  \}\par
+  let operadorFinal = operadorId || null;\par
+  if (!operadorFinal && req.authUser?.roleName === "Operador log\'edstico") \{\par
+    operadorFinal = req.authUser.id;\par
+  \}\par
+  if (operadorFinal) \{\par
+    const operador = await call(repo.getUserById, operadorFinal);\par
+    if (!operador) \{\par
+      return res.status(400).json(\{ error: "Operador inv\'e1lido" \});\par
+    \}\par
+    const role = await call(repo.getRoleById, operador.rol_id || operador.rolId);\par
+    if (role?.nombre !== "Operador log\'edstico") \{\par
+      return res.status(400).json(\{ error: "Operador inv\'e1lido" \});\par
+    \}\par
+  \}\par
+  if (repartidorId) \{\par
+    const repartidor = await call(repo.getUserById, repartidorId);\par
+    if (!repartidor) \{\par
+      return res.status(400).json(\{ error: "Repartidor inv\'e1lido" \});\par
+    \}\par
+    const role = await call(\par
+      repo.getRoleById,\par
+      repartidor.rol_id || repartidor.rolId\par
+    );\par
+    if (role?.nombre !== "Repartidor") \{\par
+      return res.status(400).json(\{ error: "Repartidor inv\'e1lido" \});\par
+    \}\par
+  \}\par
+  const pkg = await call(repo.createPackage, \{\par
+    ...req.body,\par
+    operadorId: operadorFinal\par
+  \});\par
+  res.status(201).json(pkg);\par
+\});\par
+\pard\f1\fs20\par
+
+\pard\li200\f1\fs20\b M\'e9todo 17: PATCH /api/packages/:id/status\b0\par
+\pard\li200\f0\fs16
+app.patch("/api/packages/:id/status", async (req, res) => \{\par
+  const \{ id \} = req.params;\par
+  const \{ estado, observacion \} = req.body;\par
+  const statuses = await call(repo.listStatuses);\par
+  if (!estado || !statuses.includes(estado)) \{\par
+    return res.status(400).json(\{ error: "Estado inv\'e1lido" \});\par
+  \}\par
+  const existing = await call(repo.getPackageById, id);\par
+  if (!existing) \{\par
+    return res.status(404).json(\{ error: "Paquete no encontrado" \});\par
+  \}\par
+  if (req.authUser?.roleName === "Repartidor") \{\par
+    const repartidorId = existing.repartidor_id || existing.repartidorId;\par
+    if (repartidorId !== req.authUser.id) \{\par
+      return res.status(403).json(\{ error: "No autorizado" \});\par
+    \}\par
+    if (estado !== "Entregado" && estado !== "Intento fallido") \{\par
+      return res.status(403).json(\{ error: "Acci\'f3n no permitida" \});\par
+    \}\par
+  \}\par
+  const pkg = await call(repo.updatePackageStatus, id, estado, observacion);\par
+  res.json(pkg);\par
+\});\par
+\pard\f1\fs20\par
+
+\pard\li200\f1\fs20\b M\'e9todo 18: GET /api/tracking/:code\b0\par
+\pard\li200\f0\fs16
+app.get("/api/tracking/:code", async (req, res) => \{\par
+  const tracking = await call(repo.getTrackingByCode, req.params.code);\par
+  if (!tracking) \{\par
+    return res.status(404).json(\{ error: "C\'f3digo no encontrado" \});\par
+  \}\par
+  res.json(tracking);\par
+\});\par
+\pard\f1\fs20\par
+
+\pard\li200\f1\fs20\b M\'e9todo 19: GET /api/operators/phone\b0\par
+\pard\li200\f0\fs16
+app.get("/api/operators/phone", async (req, res) => \{\par
+  if (!repo.getOperatorPhone) \{\par
+    return res.json(\{ telefono: "" \});\par
+  \}\par
+  const telefono = await call(repo.getOperatorPhone);\par
+  res.json(\{ telefono: telefono || "" \});\par
+\});\par
+\pard\f1\fs20\par
+
+\pard\li200\f1\fs20\b M\'e9todo 20: GET /api/operators\b0\par
+\pard\li200\f0\fs16
+app.get("/api/operators", async (req, res) => \{\par
+  if (!repo.listOperators) \{\par
+    return res.json([]);\par
+  \}\par
+  res.json(await call(repo.listOperators));\par
+\});\par
+\pard\f1\fs20\par
+
+\pard\li200\f1\fs20\b M\'e9todo 21: GET /api/couriers\b0\par
+\pard\li200\f0\fs16
+app.get("/api/couriers", async (req, res) => \{\par
+  if (!repo.listCouriers) \{\par
+    return res.json([]);\par
+  \}\par
+  res.json(await call(repo.listCouriers));\par
+\});\par
+\pard\f1\fs20\par
+
+\pard\li200\f1\fs20\b M\'e9todo 22: GET /api/couriers/me/packages\b0\par
+\pard\li200\f0\fs16
+app.get("/api/couriers/me/packages", async (req, res) => \{\par
+  if (req.authUser?.roleName !== "Repartidor") \{\par
+    return res.status(403).json(\{ error: "No autorizado" \});\par
+  \}\par
+  if (!repo.listPackagesByCourier) \{\par
+    return res.json([]);\par
+  \}\par
+  res.json(await call(repo.listPackagesByCourier, req.authUser.id));\par
+\});\par
+\pard\f1\fs20\par
+
+\pard\li200\f1\fs20\b M\'e9todo 23: GET /api/users (requireAdmin)\b0\par
+\pard\li200\f0\fs16
+app.get("/api/users", requireAdmin, async (req, res) => \{\par
+  res.json(await call(repo.listUsers));\par
+\});\par
+\pard\f1\fs20\par
+
+\pard\li200\f1\fs20\b M\'e9todo 24: GET /api/users/:id (requireAdmin)\b0\par
+\pard\li200\f0\fs16
+app.get("/api/users/:id", requireAdmin, async (req, res) => \{\par
+  const user = await call(repo.getUserById, req.params.id);\par
+  if (!user) \{\par
+    return res.status(404).json(\{ error: "Usuario no encontrado" \});\par
+  \}\par
+  res.json(\{\par
+    id: user.id,\par
+    nombre: user.nombre,\par
+    email: user.email,\par
+    telefono: user.telefono || "",\par
+    rolId: user.rol_id || user.rolId || null,\par
+    sucursalId: user.sucursal_id || user.sucursalId || null,\par
+    activo: user.activo\par
+  \});\par
+\});\par
+\pard\f1\fs20\par
+
+\pard\li200\f1\fs20\b M\'e9todo 25: POST /api/users (requireAdmin)\b0\par
+\pard\li200\f0\fs16
+app.post("/api/users", requireAdmin, async (req, res) => \{\par
+  const \{ nombre, email, telefono, rolId, sucursalId, password \} = req.body;\par
+  if (!nombre || !email || !password) \{\par
+    return res\par
+      .status(400)\par
+      .json(\{ error: "nombre, email y contrase\'f1a son requeridos" \});\par
+  \}\par
+  if (rolId && !(await call(repo.getRoleById, rolId))) \{\par
+    return res.status(400).json(\{ error: "Rol inv\'e1lido" \});\par
+  \}\par
+  if (sucursalId && !(await call(repo.getBranchById, sucursalId))) \{\par
+    return res.status(400).json(\{ error: "Sucursal inv\'e1lida" \});\par
+  \}\par
+  const passwordHash = await bcrypt.hash(password, 10);\par
+  const user = await call(repo.createUser, \{\par
+    ...req.body,\par
+    telefono,\par
+    passwordHash\par
+  \});\par
+  res.status(201).json(user);\par
+\});\par
+\pard\f1\fs20\par
+
+\pard\li200\f1\fs20\b M\'e9todo 26: PUT /api/users/:id (requireAdmin)\b0\par
+\pard\li200\f0\fs16
+app.put("/api/users/:id", requireAdmin, async (req, res) => \{\par
+  const \{ id \} = req.params;\par
+  const \{ nombre, email, telefono, rolId, sucursalId, activo, password \} =\par
+    req.body;\par
+  const existing = await call(repo.getUserById, id);\par
+  if (!existing) \{\par
+    return res.status(404).json(\{ error: "Usuario no encontrado" \});\par
+  \}\par
+  if (rolId && !(await call(repo.getRoleById, rolId))) \{\par
+    return res.status(400).json(\{ error: "Rol inv\'e1lido" \});\par
+  \}\par
+  if (sucursalId && !(await call(repo.getBranchById, sucursalId))) \{\par
+    return res.status(400).json(\{ error: "Sucursal inv\'e1lida" \});\par
+  \}\par
+  const passwordHash = password ? await bcrypt.hash(password, 10) : null;\par
+  const updated = await call(repo.updateUser, id, \{\par
+    nombre,\par
+    email,\par
+    telefono,\par
+    rolId,\par
+    sucursalId,\par
+    activo,\par
+    passwordHash\par
+  \});\par
+  if (!updated) \{\par
+    return res.status(400).json(\{ error: "No se pudo actualizar" \});\par
+  \}\par
+  res.json(updated);\par
+\});\par
+\pard\f1\fs20\par
+
+\pard\li200\f1\fs20\b M\'e9todo 27: DELETE /api/users/:id (requireAdmin)\b0\par
+\pard\li200\f0\fs16
+app.delete("/api/users/:id", requireAdmin, async (req, res) => \{\par
+  const removed = await call(repo.deleteUser, req.params.id);\par
+  if (!removed) \{\par
+    return res.status(404).json(\{ error: "Usuario no encontrado" \});\par
+  \}\par
+  res.json(\{ ok: true \});\par
+\});\par
+\pard\f1\fs20\par
+
+\pard\li200\f1\fs20\b M\'e9todo 28: GET /api/roles\b0\par
+\pard\li200\f0\fs16
+app.get("/api/roles", async (req, res) => \{\par
+  res.json(await call(repo.listRoles));\par
+\});\par
+\pard\f1\fs20\par
+
+\pard\li200\f1\fs20\b M\'e9todo 29: GET /api/branches\b0\par
+\pard\li200\f0\fs16
+app.get("/api/branches", async (req, res) => \{\par
+  res.json(await call(repo.listBranches));\par
+\});\par
+\pard\f1\fs20\par
+
+\pard\li200\f1\fs20\b M\'e9todo 30: POST /api/branches\b0\par
+\pard\li200\f0\fs16
+app.post("/api/branches", async (req, res) => \{\par
+  const \{ nombre, direccion \} = req.body;\par
+  if (!nombre || !direccion) \{\par
+    return res.status(400).json(\{ error: "nombre y direccion son requeridos" \});\par
+  \}\par
+  const branch = await call(repo.createBranch, req.body);\par
+  res.status(201).json(branch);\par
+\});\par
+\pard\f1\fs20\par
+
+\pard\li200\f1\fs20\b M\'e9todo 31: GET /api/statuses\b0\par
+\pard\li200\f0\fs16
+app.get("/api/statuses", async (req, res) => \{\par
+  res.json(await call(repo.listStatuses));\par
+\});\par
+\pard\f1\fs20\par
+
+\pard\li200\f1\fs20\b M\'e9todo 32: GET /api/distributors\b0\par
+\pard\li200\f0\fs16
+app.get("/api/distributors", async (req, res) => \{\par
+  res.json(await call(repo.listDistributors));\par
+\});\par
+\pard\f1\fs20\par
+
+\pard\li200\f1\fs20\b M\'e9todo 33: POST /api/distributors\b0\par
+\pard\li200\f0\fs16
+app.post("/api/distributors", async (req, res) => \{\par
+  const \{ nombre \} = req.body;\par
+  if (!nombre) \{\par
+    return res.status(400).json(\{ error: "nombre es requerido" \});\par
+  \}\par
+  const distributor = await call(repo.createDistributor, req.body);\par
+  res.status(201).json(distributor);\par
+\});\par
+\pard\f1\fs20\par
+
+\pard\li200\f1\fs20\b M\'e9todo 34: GET /api/reports/packages\b0\par
+\pard\li200\f0\fs16
+app.get("/api/reports/packages", async (req, res) => \{\par
+  const format = String(req.query.format || "csv").toLowerCase();\par
+  if (!["csv", "xlsx"].includes(format)) \{\par
+    return res.status(400).json(\{ error: "Formato no soportado" \});\par
+  \}\par
+  const packages = await call(repo.listPackagesDetailed);\par
+  const packagesWithHistory = await Promise.all(\par
+    packages.map(async (pkg) => \{\par
+      if (repo.getPackageDetailsById) \{\par
+        const full = await call(repo.getPackageDetailsById, pkg.id);\par
+        return full || pkg;\par
+      \}\par
+      return pkg;\par
+    \})\par
+  );\par
+  const headers = [\par
+    "ID",\par
+    "Codigo",\par
+    "Estado",\par
+    "Descripcion",\par
+    "Destino",\par
+    "Distribuidora",\par
+    "Razon Social Distribuidora",\par
+    "Telefono Distribuidora",\par
+    "Direccion Distribuidora",\par
+    "Cliente",\par
+    "Documento Cliente",\par
+    "Telefono Cliente",\par
+    "Email Cliente",\par
+    "Direccion Cliente",\par
+    "Sucursal Origen",\par
+    "Direccion Sucursal Origen",\par
+    "Sucursal Destino",\par
+    "Direccion Sucursal Destino",\par
+    "Creado En",\par
+    "Ultima Actualizacion",\par
+    "Ultima Observacion",\par
+    "Historial Estados"\par
+  ];\par
+  const rows = packagesWithHistory.map((pkg) => \{\par
+    const history = Array.isArray(pkg.historial) ? pkg.historial : [];\par
+    const lastEntry = history.length ? history[history.length - 1] : null;\par
+    const historyText = history\par
+      .map(\par
+        (item) =>\par
+          `$\{item.estado\} ($\{formatDate(item.fechaHora) || "sin fecha"\})$\{\par
+            item.observacion ? ` - $\{item.observacion\}` : ""\par
+          \}`\par
+      )\par
+      .join(" | ");\par
+    return [\par
+      pkg.id,\par
+      pkg.codigoSeguimiento,\par
+      pkg.estadoActual,\par
+      pkg.descripcion,\par
+      pkg.destinoTexto,\par
+      pkg.remitente?.nombre || "",\par
+      pkg.remitente?.razonSocial || "",\par
+      pkg.remitente?.telefono || "",\par
+      pkg.remitente?.direccion || "",\par
+      pkg.destinatario?.nombre || "",\par
+      pkg.destinatario?.documento || "",\par
+      pkg.destinatario?.telefono || "",\par
+      pkg.destinatario?.email || "",\par
+      pkg.destinatario?.direccion || "",\par
+      pkg.sucursalOrigen?.nombre || "",\par
+      pkg.sucursalOrigen?.direccion || "",\par
+      pkg.sucursalDestino?.nombre || "",\par
+      pkg.sucursalDestino?.direccion || "",\par
+      formatDate(pkg.creadoEn),\par
+      formatDate(lastEntry?.fechaHora),\par
+      lastEntry?.observacion || "",\par
+      historyText\par
+    ];\par
+  \});\par
+  if (format === "xlsx") \{\par
+    const worksheet = XLSX.utils.aoa_to_sheet([headers, ...rows]);\par
+    const workbook = XLSX.utils.book_new();\par
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Paquetes");\par
+    const buffer = XLSX.write(workbook, \{ type: "buffer", bookType: "xlsx" \});\par
+    res.setHeader(\par
+      "Content-Type",\par
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"\par
+    );\par
+    res.setHeader(\par
+      "Content-Disposition",\par
+      'attachment; filename="reporte-paquetes.xlsx"'\par
+    );\par
+    res.setHeader("Access-Control-Expose-Headers", "Content-Disposition");\par
+    res.send(buffer);\par
+    return;\par
+  \}\par
+\par
+  const csv = [headers, ...rows]\par
+    .map((row) => row.map(escapeCsv).join(","))\par
+    .join("\\n");\par
+\par
+  res.setHeader("Content-Type", "text/csv; charset=utf-8");\par
+  res.setHeader(\par
+    "Content-Disposition",\par
+    'attachment; filename="reporte-paquetes.csv"'\par
+  );\par
+  res.setHeader("Access-Control-Expose-Headers", "Content-Disposition");\par
+  res.send(`\\uFEFF$\{csv\}`);\par
+\});\par
+\pard\f1\fs20\par
+
+\pard\par\b\fs24 b. Casos de prueba (Plan de pruebas)\b0\par\par
+
+\trowd\trgaph70\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx900\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx3200\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx4900\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx6600\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx8300\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx9500
+\pard\intbl\b\fs16 ID\cell\pard\intbl Caso de Prueba\cell\pard\intbl Entrada\cell\pard\intbl Resultado esperado\cell\pard\intbl Resultado obtenido\cell\pard\intbl Estado\b0\cell\row
+\trowd\trgaph70\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx900\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx3200\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx4900\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx6600\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx8300\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx9500
+\pard\intbl\fs16 TC-01\cell\pard\intbl\fs16 Login admin con credenciales env\cell\pard\intbl\fs16 admin / admin123\cell\pard\intbl\fs16 Token generado (200)\cell\pard\intbl\fs16 Token generado (200)\cell\pard\intbl\fs16 Pass\cell\row
+\trowd\trgaph70\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx900\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx3200\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx4900\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx6600\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx8300\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx9500
+\pard\intbl\fs16 TC-02\cell\pard\intbl\fs16 Login con credenciales inv\'e1lidas\cell\pard\intbl\fs16 admin / badpass\cell\pard\intbl\fs16 Error 401\cell\pard\intbl\fs16 Error 401\cell\pard\intbl\fs16 Pass\cell\row
+\trowd\trgaph70\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx900\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx3200\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx4900\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx6600\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx8300\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx9500
+\pard\intbl\fs16 TC-03\cell\pard\intbl\fs16 Tracking p\'fablico con c\'f3digo v\'e1lido\cell\pard\intbl\fs16 TM-2026-0001\cell\pard\intbl\fs16 200 + historial\cell\pard\intbl\fs16 200 + historial\cell\pard\intbl\fs16 Pass\cell\row
+\trowd\trgaph70\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx900\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx3200\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx4900\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx6600\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx8300\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx9500
+\pard\intbl\fs16 TC-04\cell\pard\intbl\fs16 Acceso sin autenticaci\'f3n\cell\pard\intbl\fs16 Sin token\cell\pard\intbl\fs16 Error 401\cell\pard\intbl\fs16 Error 401\cell\pard\intbl\fs16 Pass\cell\row
+\trowd\trgaph70\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx900\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx3200\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx4900\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx6600\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx8300\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx9500
+\pard\intbl\fs16 TC-05\cell\pard\intbl\fs16 Listar paquetes con token v\'e1lido\cell\pard\intbl\fs16 Token admin\cell\pard\intbl\fs16 200 + array\cell\pard\intbl\fs16 200 + array\cell\pard\intbl\fs16 Pass\cell\row
+\trowd\trgaph70\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx900\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx3200\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx4900\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx6600\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx8300\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx9500
+\pard\intbl\fs16 TC-06\cell\pard\intbl\fs16 Crear usuarios operador y repartidor\cell\pard\intbl\fs16 Datos de usuario\cell\pard\intbl\fs16 201 creados\cell\pard\intbl\fs16 201 creados\cell\pard\intbl\fs16 Pass\cell\row
+\trowd\trgaph70\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx900\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx3200\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx4900\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx6600\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx8300\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx9500
+\pard\intbl\fs16 TC-07\cell\pard\intbl\fs16 Login de operador y repartidor\cell\pard\intbl\fs16 email / password\cell\pard\intbl\fs16 Token generado\cell\pard\intbl\fs16 Token generado\cell\pard\intbl\fs16 Pass\cell\row
+\trowd\trgaph70\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx900\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx3200\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx4900\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx6600\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx8300\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx9500
+\pard\intbl\fs16 TC-08\cell\pard\intbl\fs16 Crear cliente y distribuidora\cell\pard\intbl\fs16 Datos entidad\cell\pard\intbl\fs16 201 creados\cell\pard\intbl\fs16 201 creados\cell\pard\intbl\fs16 Pass\cell\row
+\trowd\trgaph70\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx900\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx3200\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx4900\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx6600\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx8300\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx9500
+\pard\intbl\fs16 TC-09\cell\pard\intbl\fs16 Crear paquete (auto-asignar operador)\cell\pard\intbl\fs16 Token operador\cell\pard\intbl\fs16 operadorId asignado\cell\pard\intbl\fs16 operadorId asignado\cell\pard\intbl\fs16 Pass\cell\row
+\trowd\trgaph70\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx900\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx3200\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx4900\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx6600\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx8300\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx9500
+\pard\intbl\fs16 TC-10\cell\pard\intbl\fs16 Crear paquete con repartidor asignado\cell\pard\intbl\fs16 repartidorId\cell\pard\intbl\fs16 Paquete con repartidor\cell\pard\intbl\fs16 Paquete con repartidor\cell\pard\intbl\fs16 Pass\cell\row
+\trowd\trgaph70\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx900\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx3200\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx4900\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx6600\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx8300\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx9500
+\pard\intbl\fs16 TC-11\cell\pard\intbl\fs16 Repartidor ve solo sus entregas\cell\pard\intbl\fs16 Token repartidor\cell\pard\intbl\fs16 Solo sus paquetes\cell\pard\intbl\fs16 Solo sus paquetes\cell\pard\intbl\fs16 Pass\cell\row
+\trowd\trgaph70\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx900\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx3200\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx4900\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx6600\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx8300\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx9500
+\pard\intbl\fs16 TC-12\cell\pard\intbl\fs16 Repartidor no puede crear paquetes\cell\pard\intbl\fs16 Token repartidor\cell\pard\intbl\fs16 Error 403\cell\pard\intbl\fs16 Error 403\cell\pard\intbl\fs16 Pass\cell\row
+\trowd\trgaph70\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx900\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx3200\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx4900\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx6600\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx8300\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx9500
+\pard\intbl\fs16 TC-13\cell\pard\intbl\fs16 Repartidor: entrega s\'ed / tr\'e1nsito no\cell\pard\intbl\fs16 Token repartidor\cell\pard\intbl\fs16 403 tr\'e1nsito / 200 entrega\cell\pard\intbl\fs16 403 tr\'e1nsito / 200 entrega\cell\pard\intbl\fs16 Pass\cell\row
+\trowd\trgaph70\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx900\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx3200\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx4900\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx6600\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx8300\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx9500
+\pard\intbl\fs16 TC-14\cell\pard\intbl\fs16 Listar roles, sucursales, operadores\cell\pard\intbl\fs16 Token admin\cell\pard\intbl\fs16 200 arrays\cell\pard\intbl\fs16 200 arrays\cell\pard\intbl\fs16 Pass\cell\row
+\trowd\trgaph70\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx900\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx3200\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx4900\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx6600\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx8300\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx9500
+\pard\intbl\fs16 TC-15\cell\pard\intbl\fs16 Descargar reportes CSV y XLSX\cell\pard\intbl\fs16 format=csv/xlsx\cell\pard\intbl\fs16 200 archivos\cell\pard\intbl\fs16 200 archivos\cell\pard\intbl\fs16 Pass\cell\row
+\trowd\trgaph70\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx900\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx3200\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx4900\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx6600\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx8300\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx9500
+\pard\intbl\fs16 TC-16\cell\pard\intbl\fs16 Editar y eliminar usuario\cell\pard\intbl\fs16 PUT + DELETE\cell\pard\intbl\fs16 200 ok\cell\pard\intbl\fs16 200 ok\cell\pard\intbl\fs16 Pass\cell\row
+\trowd\trgaph70\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx900\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx3200\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx4900\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx6600\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx8300\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx9500
+\pard\intbl\fs16 TC-17\cell\pard\intbl\fs16 Eliminar repartidor de prueba\cell\pard\intbl\fs16 DELETE\cell\pard\intbl\fs16 200 ok: true\cell\pard\intbl\fs16 200 ok: true\cell\pard\intbl\fs16 Pass\cell\row
+\pard\f1\fs20\par\par
+
+\pard\b\fs24 c. C\'f3digo de los casos de prueba (implementaci\'f3n)\b0\par\par
+
+\pard\li200\f1\fs20\b Configuraci\'f3n del entorno (imports, helpers, before/after)\b0\par
+\pard\li200\f0\fs16
+import assert from "node:assert/strict";\par
+import \{ after, before, describe, it \} from "node:test";\par
+\par
+const jsonHeaders = \{ "Content-Type": "application/json" \};\par
+\par
+const request = async (baseUrl, path, options = \{\}) => \{\par
+  const response = await fetch(`$\{baseUrl\}$\{path\}`, options);\par
+  const bodyText = await response.text();\par
+  let body = null;\par
+  try \{\par
+    body = bodyText ? JSON.parse(bodyText) : null;\par
+  \} catch \{\par
+    body = bodyText;\par
+  \}\par
+  return \{ status: response.status, body, headers: response.headers \};\par
+\};\par
+\par
+describe("API log\'edstica", () => \{\par
+  let app;\par
+  let server;\par
+  let baseUrl;\par
+  let token;\par
+  let operatorToken;\par
+  let courierToken;\par
+  let operatorUser;\par
+  let courierUser;\par
+  let packageIdForCourier;\par
+\par
+  before(async () => \{\par
+    process.env.USE_DB = "false";\par
+    process.env.ADMIN_USER = "admin";\par
+    process.env.ADMIN_PASS = "admin123";\par
+    const module = await import("../src/server.js");\par
+    app = module.app;\par
+    server = app.listen(0);\par
+    const \{ port \} = server.address();\par
+    baseUrl = `http://127.0.0.1:$\{port\}`;\par
+  \});\par
+\par
+  after(async () => \{\par
+    if (server) \{\par
+      server.close();\par
+    \}\par
+  \});\par
+\pard\f1\fs20\par
+
+\pard\li200\f1\fs20\b Prueba 1: login con admin env retorna token\b0\par
+\pard\li200\f0\fs16
+  it("login con admin env retorna token", async () => \{\par
+    const res = await request(baseUrl, "/api/auth/login", \{\par
+      method: "POST",\par
+      headers: jsonHeaders,\par
+      body: JSON.stringify(\{ usuario: "admin", password: "admin123" \})\par
+    \});\par
+    assert.equal(res.status, 200);\par
+    assert.ok(res.body?.token);\par
+    token = res.body.token;\par
+  \});\par
+\pard\f1\fs20\par
+
+\pard\li200\f1\fs20\b Prueba 2: login inv\'e1lido retorna 401\b0\par
+\pard\li200\f0\fs16
+  it("login inv\'e1lido retorna 401", async () => \{\par
+    const res = await request(baseUrl, "/api/auth/login", \{\par
+      method: "POST",\par
+      headers: jsonHeaders,\par
+      body: JSON.stringify(\{ usuario: "admin", password: "badpass" \})\par
+    \});\par
+    assert.equal(res.status, 401);\par
+  \});\par
+\pard\f1\fs20\par
+
+\pard\li200\f1\fs20\b Prueba 3: tracking p\'fablico retorna historial\b0\par
+\pard\li200\f0\fs16
+  it("tracking p\'fablico retorna historial", async () => \{\par
+    const res = await request(baseUrl, "/api/tracking/TM-2026-0001");\par
+    assert.equal(res.status, 200);\par
+    assert.equal(res.body?.codigoSeguimiento, "TM-2026-0001");\par
+    assert.ok(Array.isArray(res.body?.historial));\par
+  \});\par
+\pard\f1\fs20\par
+
+\pard\li200\f1\fs20\b Prueba 4: requiere auth para listar paquetes\b0\par
+\pard\li200\f0\fs16
+  it("requiere auth para listar paquetes", async () => \{\par
+    const res = await request(baseUrl, "/api/packages/expanded");\par
+    assert.equal(res.status, 401);\par
+  \});\par
+\pard\f1\fs20\par
+
+\pard\li200\f1\fs20\b Prueba 5: lista paquetes con token\b0\par
+\pard\li200\f0\fs16
+  it("lista paquetes con token", async () => \{\par
+    const res = await request(baseUrl, "/api/packages/expanded", \{\par
+      headers: \{ Authorization: `Bearer $\{token\}` \}\par
+    \});\par
+    assert.equal(res.status, 200);\par
+    assert.ok(Array.isArray(res.body));\par
+  \});\par
+\pard\f1\fs20\par
+
+\pard\li200\f1\fs20\b Prueba 6: crea usuarios operador y repartidor\b0\par
+\pard\li200\f0\fs16
+  it("crea usuarios operador y repartidor", async () => \{\par
+    const roles = await request(baseUrl, "/api/roles", \{\par
+      headers: \{ Authorization: `Bearer $\{token\}` \}\par
+    \});\par
+    const branches = await request(baseUrl, "/api/branches", \{\par
+      headers: \{ Authorization: `Bearer $\{token\}` \}\par
+    \});\par
+    assert.ok(Array.isArray(roles.body));\par
+    assert.ok(Array.isArray(branches.body));\par
+\par
+    const operatorRole = roles.body.find((r) => r.nombre === "Operador log\'edstico");\par
+    const courierRole = roles.body.find((r) => r.nombre === "Repartidor");\par
+    assert.ok(operatorRole?.id);\par
+    assert.ok(courierRole?.id);\par
+\par
+    const resOperator = await request(baseUrl, "/api/users", \{\par
+      method: "POST",\par
+      headers: \{ ...jsonHeaders, Authorization: `Bearer $\{token\}` \},\par
+      body: JSON.stringify(\{\par
+        nombre: "Operador Test",\par
+        email: "operador@test.com",\par
+        telefono: "999888777",\par
+        rolId: operatorRole.id,\par
+        sucursalId: branches.body[0]?.id,\par
+        password: "operador123",\par
+        activo: true\par
+      \})\par
+    \});\par
+    assert.equal(resOperator.status, 201);\par
+    operatorUser = resOperator.body;\par
+    assert.ok(operatorUser?.id);\par
+\par
+    const resCourier = await request(baseUrl, "/api/users", \{\par
+      method: "POST",\par
+      headers: \{ ...jsonHeaders, Authorization: `Bearer $\{token\}` \},\par
+      body: JSON.stringify(\{\par
+        nombre: "Repartidor Test",\par
+        email: "repartidor@test.com",\par
+        telefono: "988776655",\par
+        rolId: courierRole.id,\par
+        sucursalId: branches.body[0]?.id,\par
+        password: "repartidor123",\par
+        activo: true\par
+      \})\par
+    \});\par
+    assert.equal(resCourier.status, 201);\par
+    courierUser = resCourier.body;\par
+    assert.ok(courierUser?.id);\par
+  \});\par
+\pard\f1\fs20\par
+
+\pard\li200\f1\fs20\b Prueba 7: login de operador y repartidor\b0\par
+\pard\li200\f0\fs16
+  it("login de operador y repartidor", async () => \{\par
+    const resOperator = await request(baseUrl, "/api/auth/login", \{\par
+      method: "POST",\par
+      headers: jsonHeaders,\par
+      body: JSON.stringify(\{\par
+        usuario: "operador@test.com",\par
+        password: "operador123"\par
+      \})\par
+    \});\par
+    assert.equal(resOperator.status, 200);\par
+    operatorToken = resOperator.body?.token;\par
+    assert.ok(operatorToken);\par
+\par
+    const resCourier = await request(baseUrl, "/api/auth/login", \{\par
+      method: "POST",\par
+      headers: jsonHeaders,\par
+      body: JSON.stringify(\{\par
+        usuario: "repartidor@test.com",\par
+        password: "repartidor123"\par
+      \})\par
+    \});\par
+    assert.equal(resCourier.status, 200);\par
+    courierToken = resCourier.body?.token;\par
+    assert.ok(courierToken);\par
+  \});\par
+\pard\f1\fs20\par
+
+\pard\li200\f1\fs20\b Prueba 8: crea cliente y distribuidora\b0\par
+\pard\li200\f0\fs16
+  it("crea cliente y distribuidora", async () => \{\par
+    const resClient = await request(baseUrl, "/api/clients", \{\par
+      method: "POST",\par
+      headers: \{ ...jsonHeaders, Authorization: `Bearer $\{token\}` \},\par
+      body: JSON.stringify(\{\par
+        tipo: "persona",\par
+        nombre: "Cliente Test",\par
+        telefono: "900111222",\par
+        direccion: "Jr. Test 123"\par
+      \})\par
+    \});\par
+    assert.equal(resClient.status, 201);\par
+\par
+    const resDistributor = await request(baseUrl, "/api/distributors", \{\par
+      method: "POST",\par
+      headers: \{ ...jsonHeaders, Authorization: `Bearer $\{token\}` \},\par
+      body: JSON.stringify(\{\par
+        nombre: "Distribuidora Test",\par
+        razonSocial: "Distribuidora Test SAC",\par
+        telefono: "901222333"\par
+      \})\par
+    \});\par
+    assert.equal(resDistributor.status, 201);\par
+  \});\par
+\pard\f1\fs20\par
+
+\pard\li200\f1\fs20\b Prueba 9: crear paquete asigna operador autom\'e1ticamente\b0\par
+\pard\li200\f0\fs16
+  it("crear paquete asigna operador autom\'e1ticamente", async () => \{\par
+    const res = await request(baseUrl, "/api/packages", \{\par
+      method: "POST",\par
+      headers: \{ ...jsonHeaders, Authorization: `Bearer $\{operatorToken\}` \},\par
+      body: JSON.stringify(\{\par
+        remitenteId: "d1",\par
+        destinatarioId: "c1",\par
+        sucursalOrigenId: "b1",\par
+        destinoTexto: "Jr. Test 123",\par
+        descripcion: "Caja prueba"\par
+      \})\par
+    \});\par
+    assert.equal(res.status, 201);\par
+    assert.equal(res.body?.operadorId, operatorUser.id);\par
+  \});\par
+\pard\f1\fs20\par
+
+\pard\li200\f1\fs20\b Prueba 10: crear paquete con repartidor asignado\b0\par
+\pard\li200\f0\fs16
+  it("crear paquete con repartidor asignado", async () => \{\par
+    const res = await request(baseUrl, "/api/packages", \{\par
+      method: "POST",\par
+      headers: \{ ...jsonHeaders, Authorization: `Bearer $\{token\}` \},\par
+      body: JSON.stringify(\{\par
+        remitenteId: "d1",\par
+        destinatarioId: "c1",\par
+        sucursalOrigenId: "b1",\par
+        destinoTexto: "Jr. Courier 456",\par
+        descripcion: "Caja courier",\par
+        repartidorId: courierUser.id\par
+      \})\par
+    \});\par
+    assert.equal(res.status, 201);\par
+    packageIdForCourier = res.body?.id;\par
+    assert.ok(packageIdForCourier);\par
+  \});\par
+\pard\f1\fs20\par
+
+\pard\li200\f1\fs20\b Prueba 11: repartidor ve solo sus entregas\b0\par
+\pard\li200\f0\fs16
+  it("repartidor ve solo sus entregas", async () => \{\par
+    const res = await request(baseUrl, "/api/couriers/me/packages", \{\par
+      headers: \{ Authorization: `Bearer $\{courierToken\}` \}\par
+    \});\par
+    assert.equal(res.status, 200);\par
+    assert.ok(Array.isArray(res.body));\par
+    assert.ok(res.body.every((pkg) => pkg.repartidor?.id === courierUser.id));\par
+  \});\par
+\pard\f1\fs20\par
+
+\pard\li200\f1\fs20\b Prueba 12: repartidor no puede crear paquetes\b0\par
+\pard\li200\f0\fs16
+  it("repartidor no puede crear paquetes", async () => \{\par
+    const res = await request(baseUrl, "/api/packages", \{\par
+      method: "POST",\par
+      headers: \{ ...jsonHeaders, Authorization: `Bearer $\{courierToken\}` \},\par
+      body: JSON.stringify(\{\par
+        remitenteId: "d1",\par
+        destinatarioId: "c1",\par
+        sucursalOrigenId: "b1",\par
+        destinoTexto: "Jr. No permitido"\par
+      \})\par
+    \});\par
+    assert.equal(res.status, 403);\par
+  \});\par
+\pard\f1\fs20\par
+
+\pard\li200\f1\fs20\b Prueba 13: repartidor puede marcar entrega y no puede En Tr\'e1nsito\b0\par
+\pard\li200\f0\fs16
+  it("repartidor puede marcar entrega y no puede En Tr\'e1nsito", async () => \{\par
+    const resDenied = await request(\par
+      baseUrl,\par
+      `/api/packages/$\{packageIdForCourier\}/status`,\par
+      \{\par
+        method: "PATCH",\par
+        headers: \{ ...jsonHeaders, Authorization: `Bearer $\{courierToken\}` \},\par
+        body: JSON.stringify(\{ estado: "En Tr\'e1nsito", observacion: "" \})\par
+      \}\par
+    );\par
+    assert.equal(resDenied.status, 403);\par
+\par
+    const resOk = await request(\par
+      baseUrl,\par
+      `/api/packages/$\{packageIdForCourier\}/status`,\par
+      \{\par
+        method: "PATCH",\par
+        headers: \{ ...jsonHeaders, Authorization: `Bearer $\{courierToken\}` \},\par
+        body: JSON.stringify(\{ estado: "Entregado", observacion: "OK" \})\par
+      \}\par
+    );\par
+    assert.equal(resOk.status, 200);\par
+  \});\par
+\pard\f1\fs20\par
+
+\pard\li200\f1\fs20\b Prueba 14: lista roles, sucursales y operadores/repartidores\b0\par
+\pard\li200\f0\fs16
+  it("lista roles, sucursales y operadores/repartidores", async () => \{\par
+    const roles = await request(baseUrl, "/api/roles", \{\par
+      headers: \{ Authorization: `Bearer $\{token\}` \}\par
+    \});\par
+    assert.equal(roles.status, 200);\par
+\par
+    const branches = await request(baseUrl, "/api/branches", \{\par
+      headers: \{ Authorization: `Bearer $\{token\}` \}\par
+    \});\par
+    assert.equal(branches.status, 200);\par
+\par
+    const operators = await request(baseUrl, "/api/operators", \{\par
+      headers: \{ Authorization: `Bearer $\{token\}` \}\par
+    \});\par
+    assert.equal(operators.status, 200);\par
+\par
+    const couriers = await request(baseUrl, "/api/couriers", \{\par
+      headers: \{ Authorization: `Bearer $\{token\}` \}\par
+    \});\par
+    assert.equal(couriers.status, 200);\par
+  \});\par
+\pard\f1\fs20\par
+
+\pard\li200\f1\fs20\b Prueba 15: descarga reportes CSV y XLSX\b0\par
+\pard\li200\f0\fs16
+  it("descarga reportes CSV y XLSX", async () => \{\par
+    const resCsv = await request(\par
+      baseUrl,\par
+      "/api/reports/packages?format=csv",\par
+      \{\par
+        headers: \{ Authorization: `Bearer $\{token\}` \}\par
+      \}\par
+    );\par
+    assert.equal(resCsv.status, 200);\par
+\par
+    const resXlsx = await request(\par
+      baseUrl,\par
+      "/api/reports/packages?format=xlsx",\par
+      \{\par
+        headers: \{ Authorization: `Bearer $\{token\}` \}\par
+      \}\par
+    );\par
+    assert.equal(resXlsx.status, 200);\par
+  \});\par
+\pard\f1\fs20\par
+
+\pard\li200\f1\fs20\b Prueba 16: edita y elimina usuario\b0\par
+\pard\li200\f0\fs16
+  it("edita y elimina usuario", async () => \{\par
+    const resUpdate = await request(baseUrl, `/api/users/$\{operatorUser.id\}`, \{\par
+      method: "PUT",\par
+      headers: \{ ...jsonHeaders, Authorization: `Bearer $\{token\}` \},\par
+      body: JSON.stringify(\{\par
+        nombre: "Operador Editado",\par
+        email: "operador@test.com",\par
+        telefono: "900000000",\par
+        rolId: operatorUser.rolId,\par
+        sucursalId: operatorUser.sucursalId,\par
+        activo: true\par
+      \})\par
+    \});\par
+    assert.equal(resUpdate.status, 200);\par
+\par
+    const del = await request(baseUrl, `/api/users/$\{operatorUser.id\}`, \{\par
+      method: "DELETE",\par
+      headers: \{ Authorization: `Bearer $\{token\}` \}\par
+    \});\par
+    assert.equal(del.status, 200);\par
+    assert.equal(del.body?.ok, true);\par
+  \});\par
+\pard\f1\fs20\par
+
+\pard\li200\f1\fs20\b Prueba 17: elimina repartidor de prueba\b0\par
+\pard\li200\f0\fs16
+  it("elimina repartidor de prueba", async () => \{\par
+    const del = await request(baseUrl, `/api/users/$\{courierUser.id\}`, \{\par
+      method: "DELETE",\par
+      headers: \{ Authorization: `Bearer $\{token\}` \}\par
+    \});\par
+    assert.equal(del.status, 200);\par
+    assert.equal(del.body?.ok, true);\par
+  \});\par
+\pard\f1\fs20\par
+
+\pard\par\b\fs22 Ejecuci\'f3n de pruebas:\b0\par
+\pard\f0\fs18 cd backend\par
+npm test\par
+\pard\f1\fs22\par
+\pard\b Resultado: 17 pruebas ejecutadas, 17 Pass.\b0\par
+}

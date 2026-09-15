@@ -1,0 +1,25 @@
+{
+  "name": "logistica-backend",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node src/server.js",
+    "start": "node src/server.js",
+    "test": "cross-env NODE_ENV=test node --test",
+    "test:unit": "cross-env NODE_ENV=test node --test tests/api.test.js",
+    "test:concurrency": "cross-env NODE_ENV=test node --test tests/concurrency.test.js"
+  },
+  "dependencies": {
+    "bcryptjs": "^3.0.3",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "pg": "^8.11.5",
+    "uuid": "^9.0.1",
+    "xlsx": "^0.18.5"
+  },
+  "devDependencies": {
+    "cross-env": "^10.1.0"
+  }
+}

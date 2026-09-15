@@ -1,0 +1,21 @@
+ID,NOMBRE,DESCRIPCIÓN,ENTRADAS,PROCESO,SALIDAS
+RF-01,Consulta de estado de paquete,Permite al cliente consultar el estado actual de su paquete sin autenticación.,Código de seguimiento.,Valida el código y consulta historial.,Estado actual e historial.
+RF-02,Registro de paquetes,Permite registrar nuevos paquetes en el sistema.,"Remitente, cliente, operador, repartidor, sucursal origen, destino, descripción.",Valida datos, genera código y guarda.,Confirmación y código de seguimiento.
+RF-03,Actualización de estado,Permite actualizar el estado del paquete según rol.,"ID de paquete, nuevo estado, observación.",Valida rol/estado y registra historial.,Estado actualizado.
+RF-04,Historial de estados,Permite visualizar la línea de tiempo del paquete.,ID de paquete.,Consulta historial y ordena por fecha.,Lista cronológica de estados.
+RF-05,Autenticación de usuarios,Permite iniciar sesión con credenciales.,"Email y contraseña.",Valida credenciales y genera token.,Token de sesión.
+RF-06,Gestión de usuarios,Admin crea, edita y elimina usuarios.,"Datos de usuario, rol, teléfono, contraseña.",Valida datos y guarda cambios.,Usuario creado/actualizado/eliminado.
+RF-07,Gestión de roles,Sistema asegura roles básicos.,Nombres de roles.,Verifica/crea roles requeridos.,Roles disponibles.
+RF-08,Gestión de clientes,Admin/Operador registra y consulta clientes.,Datos del cliente.,Valida y guarda cliente.,Cliente registrado/listado.
+RF-09,Gestión de distribuidoras,Admin registra y consulta distribuidoras.,Datos de distribuidora.,Valida y guarda distribuidora.,Distribuidora registrada/listada.
+RF-10,Gestión de sucursales,Admin registra y consulta sucursales.,"Nombre y dirección.",Valida y guarda sucursal.,Sucursal registrada/listada.
+RF-11,Asignación de operador,Permite asignar operador a un paquete.,"Operador seleccionado o auto-asignación.",Valida rol y asigna operador.,Operador asignado al paquete.
+RF-12,Asignación de repartidor,Permite asignar repartidor a un paquete.,Repartidor seleccionado.,Valida rol y asigna repartidor.,Repartidor asignado al paquete.
+RF-13,Vista “Mis entregas”,Repartidor ve solo paquetes asignados.,Usuario logueado.,Filtra por repartidor_id.,Listado de entregas asignadas.
+RF-14,Intento fallido,Repartidor registra intento fallido.,"ID paquete, observación.",Valida rol y guarda estado.,Estado “Intento fallido” registrado.
+RF-15,Reportes,Admin genera reportes CSV/XLSX.,Formato.,Genera archivo con datos.,Archivo descargable.
+RF-16,Llamar operador,Permite llamar al operador asignado.,Teléfono del operador.,Valida existencia.,Llamada iniciada.
+RF-17,Llamar repartidor,Permite llamar al repartidor asignado.,Teléfono del repartidor.,Valida existencia.,Llamada iniciada.
+RF-18,Llamar cliente,Permite llamar al cliente del envío.,Teléfono del cliente.,Valida existencia.,Llamada iniciada.
+RF-19,Ver ubicación en mapa,Permite abrir la ubicación de entrega.,Dirección destino.,Abre Google Maps.,Mapa con ubicación.
+RF-20,Control de acceso por rol,Restringe rutas y acciones por rol.,Rol del usuario.,Aplica permisos.,Acceso permitido o bloqueado.

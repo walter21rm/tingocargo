@@ -1,0 +1,36 @@
+# Blueprint de Render: API Node + sitio estático, ambos en plan gratuito.
+# Base de datos: Supabase (ya existente). Configurar DATABASE_URL en el dashboard.
+
+services:
+  - type: web
+    name: tingocargo-api
+    runtime: node
+    plan: free
+    rootDir: backend
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: USE_DB
+        value: "true"
+      - key: DATABASE_URL
+        sync: false
+      - key: DNI_API_URL
+        sync: false
+      - key: DNI_API_TOKEN
+        sync: false
+
+  - type: web
+    name: tingocargo-web
+    runtime: static
+    rootDir: frontend
+    buildCommand: npm install && npm run build
+    staticPublishPath: dist
+    envVars:
+      - key: VITE_API_BASE
+        sync: false
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html

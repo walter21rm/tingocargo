@@ -1,0 +1,15 @@
+ID,NOMBRE,DESCRIPCIÓN,ENTRADAS,PROCESO,SALIDAS
+RNF-01,Disponibilidad,El sistema debe estar disponible para uso continuo en horario operativo.,"Requerimientos de disponibilidad.",Monitoreo y despliegue estable.,Servicio disponible.
+RNF-02,Seguridad de acceso,El sistema debe proteger el acceso mediante autenticación y control de roles.,"Credenciales y roles.",Validación y autorización.,Acceso seguro.
+RNF-03,Confidencialidad de datos,Los datos de clientes y envíos deben estar protegidos.,"Datos sensibles.",Políticas de acceso y cifrado en tránsito.,Datos protegidos.
+RNF-04,Integridad de información,La información no debe alterarse sin autorización.,"Operaciones de escritura.",Validaciones y restricciones en BD.,Datos consistentes.
+RNF-05,Tiempo de respuesta,Las consultas principales deben responder rápidamente.,"Solicitudes del usuario.",Optimización de consultas y caché si aplica.,Respuesta en tiempo aceptable.
+RNF-06,Escalabilidad,El sistema debe permitir crecimiento de usuarios y envíos.,"Incremento de carga.",Arquitectura modular y BD escalable.,Soporte a mayor volumen.
+RNF-07,Usabilidad,La interfaz debe ser clara y fácil de usar.,"Interacciones del usuario.",Diseño consistente y accesible.,Uso intuitivo.
+RNF-08,Compatibilidad,La aplicación debe funcionar en navegadores modernos.,"Chrome, Edge, Firefox.",Pruebas de compatibilidad.,Funcionamiento correcto.
+RNF-09,Portabilidad,El sistema debe poder desplegarse en diferentes entornos.,"Configuraciones de entorno.",Variables y scripts de despliegue.,Despliegue flexible.
+RNF-10,Auditoría básica,El sistema debe permitir rastrear cambios de estado.,"Historial de estados.",Registro con fecha y observación.,Trazabilidad.
+RNF-11,Respaldo,La base de datos debe contar con copias de seguridad periódicas.,"Política de backups.",Backups automáticos.,Recuperación ante fallos.
+RNF-12,Mantenibilidad,El código debe ser modular y fácil de mantener.,"Buenas prácticas.",Separación por capas y módulos.,Facilidad de mantenimiento.
+RNF-13,Confiabilidad,El sistema debe operar sin fallos frecuentes.,"Operación continua.",Manejo de errores y validaciones.,Operación estable.
+RNF-14,Internacionalización,Fechas y horas deben mostrarse en zona horaria local.,"Zona horaria.",Formato consistente en UI.,Hora correcta en pantalla.

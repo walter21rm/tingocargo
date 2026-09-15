@@ -1,0 +1,28 @@
+{\rtf1\ansi\deff0
+{\fonttbl{\f0 Calibri;}}
+\fs22
+\pard
+\b Requisitos funcionales\par\b0
+\par
+ID\tab NOMBRE\tab DESCRIPCI\'d3N\tab ENTRADAS\tab PROCESO\tab SALIDAS\par
+RF-01\tab Consulta de estado de paquete\tab Permite al cliente consultar el estado actual de su paquete sin autenticaci\'f3n.\tab C\'f3digo de seguimiento.\tab Valida el c\'f3digo y consulta historial.\tab Estado actual e historial.\par
+RF-02\tab Registro de paquetes\tab Permite registrar nuevos paquetes en el sistema.\tab Remitente, cliente, operador, repartidor, sucursal origen, destino, descripci\'f3n.\tab Valida datos, genera c\'f3digo y guarda.\tab Confirmaci\'f3n y c\'f3digo de seguimiento.\par
+RF-03\tab Actualizaci\'f3n de estado\tab Permite actualizar el estado del paquete seg\'fan rol.\tab ID de paquete, nuevo estado, observaci\'f3n.\tab Valida rol/estado y registra historial.\tab Estado actualizado.\par
+RF-04\tab Historial de estados\tab Permite visualizar la l\'ednea de tiempo del paquete.\tab ID de paquete.\tab Consulta historial y ordena por fecha.\tab Lista cronol\'f3gica de estados.\par
+RF-05\tab Autenticaci\'f3n de usuarios\tab Permite iniciar sesi\'f3n con credenciales.\tab Email y contrase\'f1a.\tab Valida credenciales y genera token.\tab Token de sesi\'f3n.\par
+RF-06\tab Gesti\'f3n de usuarios\tab Admin crea, edita y elimina usuarios.\tab Datos de usuario, rol, tel\'e9fono, contrase\'f1a.\tab Valida datos y guarda cambios.\tab Usuario creado/actualizado/eliminado.\par
+RF-07\tab Gesti\'f3n de roles\tab Sistema asegura roles b\'e1sicos.\tab Nombres de roles.\tab Verifica/crea roles requeridos.\tab Roles disponibles.\par
+RF-08\tab Gesti\'f3n de clientes\tab Admin/Operador registra y consulta clientes.\tab Datos del cliente.\tab Valida y guarda cliente.\tab Cliente registrado/listado.\par
+RF-09\tab Gesti\'f3n de distribuidoras\tab Admin registra y consulta distribuidoras.\tab Datos de distribuidora.\tab Valida y guarda distribuidora.\tab Distribuidora registrada/listada.\par
+RF-10\tab Gesti\'f3n de sucursales\tab Admin registra y consulta sucursales.\tab Nombre y direcci\'f3n.\tab Valida y guarda sucursal.\tab Sucursal registrada/listada.\par
+RF-11\tab Asignaci\'f3n de operador\tab Permite asignar operador a un paquete.\tab Operador seleccionado o auto-asignaci\'f3n.\tab Valida rol y asigna operador.\tab Operador asignado al paquete.\par
+RF-12\tab Asignaci\'f3n de repartidor\tab Permite asignar repartidor a un paquete.\tab Repartidor seleccionado.\tab Valida rol y asigna repartidor.\tab Repartidor asignado al paquete.\par
+RF-13\tab Vista "Mis entregas"\tab Repartidor ve solo paquetes asignados.\tab Usuario logueado.\tab Filtra por repartidor_id.\tab Listado de entregas asignadas.\par
+RF-14\tab Intento fallido\tab Repartidor registra intento fallido.\tab ID paquete, observaci\'f3n.\tab Valida rol y guarda estado.\tab Estado "Intento fallido" registrado.\par
+RF-15\tab Reportes\tab Admin genera reportes CSV/XLSX.\tab Formato.\tab Genera archivo con datos.\tab Archivo descargable.\par
+RF-16\tab Llamar operador\tab Permite llamar al operador asignado.\tab Tel\'e9fono del operador.\tab Valida existencia.\tab Llamada iniciada.\par
+RF-17\tab Llamar repartidor\tab Permite llamar al repartidor asignado.\tab Tel\'e9fono del repartidor.\tab Valida existencia.\tab Llamada iniciada.\par
+RF-18\tab Llamar cliente\tab Permite llamar al cliente del env\'edo.\tab Tel\'e9fono del cliente.\tab Valida existencia.\tab Llamada iniciada.\par
+RF-19\tab Ver ubicaci\'f3n en mapa\tab Permite abrir la ubicaci\'f3n de entrega.\tab Direcci\'f3n destino.\tab Abre Google Maps.\tab Mapa con ubicaci\'f3n.\par
+RF-20\tab Control de acceso por rol\tab Restringe rutas y acciones por rol.\tab Rol del usuario.\tab Aplica permisos.\tab Acceso permitido o bloqueado.\par
+}

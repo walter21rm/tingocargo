@@ -1,0 +1,52 @@
+{
+  "configuracion": {
+    "servidor": {
+      "puerto": 4000,
+      "zonaHoraria": "America/Lima"
+    },
+    "baseDatos": {
+      "usar": true,
+      "url": "postgresql://usuario:password@host:5432/postgres"
+    },
+    "api": {
+      "urlBaseFrontend": "http://localhost:4000",
+      "dniUrl": "https://api.decolecta.com/v1/reniec/dni",
+      "dniToken": ""
+    },
+    "auth": {
+      "adminUser": "admin",
+      "adminPass": "admin123",
+      "seedNombre": "Walter",
+      "seedEmail": "wruizmarin21@gmail.com",
+      "seedPassword": "wally21",
+      "tokenKey": "adminToken",
+      "userKey": "adminUser"
+    }
+  },
+  "parametrizacion": {
+    "tarifas": {
+      "precioEstandarSoles": 10,
+      "pesoLimiteKg": 2,
+      "moneda": "soles"
+    },
+    "paquetes": {
+      "estados": ["En Almacén", "En Tránsito", "Entregado", "Intento fallido"],
+      "prefijoSeguimiento": "TM-",
+      "metodosPago": ["tarjeta", "yape", "efectivo"]
+    },
+    "telefonos": {
+      "paisPorDefecto": "PE",
+      "paises": [
+        { "iso": "PE", "nombre": "Peru", "dialCode": "51", "digits": 9 },
+        { "iso": "CL", "nombre": "Chile", "dialCode": "56", "digits": 9 },
+        { "iso": "CO", "nombre": "Colombia", "dialCode": "57", "digits": 10 },
+        { "iso": "EC", "nombre": "Ecuador", "dialCode": "593", "digits": 9 },
+        { "iso": "MX", "nombre": "Mexico", "dialCode": "52", "digits": 10 },
+        { "iso": "US", "nombre": "Estados Unidos", "dialCode": "1", "digits": 10 },
+        { "iso": "BO", "nombre": "Bolivia", "dialCode": "591", "digits": 8 },
+        { "iso": "AR", "nombre": "Argentina", "dialCode": "54", "digits": 10 },
+        { "iso": "BR", "nombre": "Brasil", "dialCode": "55", "digits": 11 }
+      ]
+    }
+  }
+}

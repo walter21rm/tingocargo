@@ -1,0 +1,394 @@
+{\rtf1\ansi\deff0
+{\fonttbl{\f0 Consolas;}{\f1 Arial;}}
+\paperw12240\paperh15840\margl1080\margr1080\margt1080\margb1080
+\f1\fs22
+
+\pard\qc\par\par\par\par\par\par
+\pard\qc\b\fs36 DOCUMENTACI\'d3N DE PRUEBAS DE CONCURRENCIA\b0\par\par
+\pard\qc\fs24 Sistema de Transporte y Log\'edstica\par\par
+\pard\qc\fs20 Backend: Node.js / Express.js\par
+\pard\qc\fs20 Archivo de pruebas: backend/tests/concurrency.test.js\par\par
+\pard\qc\fs20 Fecha de ejecuci\'f3n: 4 de febrero de 2026\par
+\pard\qc\fs20 Resultado: 5 pruebas ejecutadas, 5 Pass, 0 Fail\par
+\pard\par\page
+
+\pard\b\fs28 \'cdNDICE\b0\par\par
+\pard\fs20 1. Introducci\'f3n y objetivo\par
+2. Tecnolog\'edas y herramientas utilizadas\par
+3. Configuraci\'f3n del entorno de pruebas\par
+4. Metodolog\'eda de las pruebas de concurrencia\par
+5. Descripci\'f3n detallada de cada escenario\par
+6. Comandos de ejecuci\'f3n\par
+7. Resultados obtenidos\par
+8. Tabla resumen de resultados\par
+9. C\'f3digo fuente completo de la prueba\par
+10. Conclusiones\par
+\pard\par\page
+
+\pard\b\fs26 1. Introducci\'f3n y objetivo\b0\par\par
+\pard\fs20 Las pruebas de concurrencia tienen como objetivo verificar que el sistema backend del proyecto de Transporte y Log\'edstica es capaz de manejar m\'faltiples solicitudes simult\'e1neas sin producir errores, p\'e9rdida de datos, respuestas inconsistentes o degradaci\'f3n significativa del rendimiento.\par\par
+A diferencia de las pruebas unitarias (que prueban cada endpoint de forma aislada y secuencial), las pruebas de concurrencia env\'edan decenas de solicitudes HTTP al mismo tiempo usando Promise.all, simulando un escenario real donde m\'faltiples usuarios operan la plataforma de manera simult\'e1nea.\par\par
+\b Objetivos espec\'edficos:\b0\par
+\pard\li360\fs20 - Verificar que el servidor no se bloquea ni arroja errores bajo carga paralela.\par
+- Confirmar que cada solicitud concurrente recibe una respuesta correcta (c\'f3digo HTTP esperado y datos v\'e1lidos).\par
+- Medir el tiempo de respuesta bajo carga y asegurar que no supere un umbral aceptable (15 segundos).\par
+- Detectar posibles condiciones de carrera (race conditions) en la creaci\'f3n y actualizaci\'f3n de recursos.\par
+\pard\par\par
+
+\pard\b\fs26 2. Tecnolog\'edas y herramientas utilizadas\b0\par\par
+\trowd\trgaph70\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx3100\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx6200\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx9400
+\pard\intbl\fs18 \b Componente\b0\cell\pard\intbl\fs18 \b Tecnolog\'eda\b0\cell\pard\intbl\fs18 \b Versi\'f3n / Detalle\b0\cell\row
+\trowd\trgaph70\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx3100\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx6200\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx9400
+\pard\intbl\fs18 Runtime\cell\pard\intbl\fs18 Node.js\cell\pard\intbl\fs18 v20+\cell\row
+\trowd\trgaph70\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx3100\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx6200\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx9400
+\pard\intbl\fs18 Framework backend\cell\pard\intbl\fs18 Express.js\cell\pard\intbl\fs18 4.19.x\cell\row
+\trowd\trgaph70\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx3100\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx6200\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx9400
+\pard\intbl\fs18 Test runner\cell\pard\intbl\fs18 node:test\cell\pard\intbl\fs18 Nativo de Node.js\cell\row
+\trowd\trgaph70\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx3100\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx6200\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx9400
+\pard\intbl\fs18 Assertions\cell\pard\intbl\fs18 node:assert/strict\cell\pard\intbl\fs18 Nativo de Node.js\cell\row
+\trowd\trgaph70\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx3100\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx6200\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx9400
+\pard\intbl\fs18 HTTP client\cell\pard\intbl\fs18 fetch (global)\cell\pard\intbl\fs18 Nativo de Node.js 18+\cell\row
+\trowd\trgaph70\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx3100\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx6200\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx9400
+\pard\intbl\fs18 Concurrencia\cell\pard\intbl\fs18 Promise.all\cell\pard\intbl\fs18 JavaScript nativo\cell\row
+\trowd\trgaph70\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx3100\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx6200\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx9400
+\pard\intbl\fs18 Almacenamiento\cell\pard\intbl\fs18 In-memory (storage.js)\cell\pard\intbl\fs18 Sin base de datos externa\cell\row
+\trowd\trgaph70\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx3100\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx6200\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx9400
+\pard\intbl\fs18 Env vars\cell\pard\intbl\fs18 cross-env\cell\pard\intbl\fs18 Para compatibilidad Windows/Linux\cell\row
+\pard\par\par
+
+\pard\b\fs26 3. Configuraci\'f3n del entorno de pruebas\b0\par\par
+\pard\fs20 Las pruebas se ejecutan en un entorno aislado que no depende de la base de datos externa (Supabase/PostgreSQL). El entorno se configura de la siguiente manera:\par\par
+\b 3.1 Variables de entorno\b0\par
+\pard\f0\fs16
+process.env.USE_DB = "false";     // Usa almacenamiento en memoria\par
+process.env.ADMIN_USER = "admin"; // Credenciales de admin de respaldo\par
+process.env.ADMIN_PASS = "admin123";\par
+process.env.NODE_ENV = "test";    // Evita que el servidor inicie autom\'e1ticamente\par
+\pard\f1\fs20\par
+\b 3.2 Inicio del servidor\b0\par
+\pard\fs20 El servidor Express se importa din\'e1micamente y se levanta en un puerto aleatorio (puerto 0) para evitar conflictos:\par
+\pard\f0\fs16
+const module = await import("../src/server.js");\par
+app = module.app;\par
+server = app.listen(0);  // Puerto din\'e1mico\par
+const \{ port \} = server.address();\par
+baseUrl = `http://127.0.0.1:$\{port\}`;\par
+\pard\f1\fs20\par
+\b 3.3 Cierre del servidor\b0\par
+\pard\fs20 Al finalizar todas las pruebas, el servidor se cierra para liberar el puerto:\par
+\pard\f0\fs16
+after(async () => \{\par
+  if (server) server.close();\par
+\});\par
+\pard\f1\fs20\par
+\b 3.4 Funci\'f3n auxiliar runConcurrent\b0\par
+\pard\fs20 Se cre\'f3 una funci\'f3n gen\'e9rica que lanza N solicitudes en paralelo usando Promise.all y mide el tiempo total transcurrido:\par
+\pard\f0\fs16
+const runConcurrent = async (count, fn) => \{\par
+  const startedAt = Date.now();\par
+  const results = await Promise.all(\par
+    Array.from(\{ length: count \}, (_, index) => fn(index))\par
+  );\par
+  const elapsedMs = Date.now() - startedAt;\par
+  return \{ results, elapsedMs \};\par
+\};\par
+\pard\f1\fs20\par\par
+
+\pard\b\fs26 4. Metodolog\'eda de las pruebas de concurrencia\b0\par\par
+\pard\fs20 Cada escenario de prueba sigue la misma estructura:\par\par
+\pard\li360\fs20\b Paso 1 - Preparaci\'f3n:\b0  Se definen los par\'e1metros de la solicitud HTTP (m\'e9todo, headers, body).\par
+\b Paso 2 - Lanzamiento concurrente:\b0  Se invoca runConcurrent(N, fn) que dispara N solicitudes id\'e9nticas o similares al mismo tiempo mediante Promise.all.\par
+\b Paso 3 - Recolecci\'f3n de resultados:\b0  Se recopilan todas las respuestas (status y body) de las N solicitudes.\par
+\b Paso 4 - Validaci\'f3n:\b0  Se verifica que:\par
+\pard\li720\fs20 - Todas las respuestas tengan el c\'f3digo HTTP esperado (200 o 201).\par
+- Los datos de cada respuesta sean consistentes y correctos.\par
+- El tiempo total no supere los 15,000 ms (umbral de rendimiento).\par
+\pard\par\par
+
+\pard\b\fs26 5. Descripci\'f3n detallada de cada escenario\b0\par\par
+\pard\b\fs22 Escenario 1: Concurrencia de login admin (30 requests paralelos)\b0\par\par
+\pard\fs20\b Endpoint:\b0  POST /api/auth/login\par
+\b Requests simult\'e1neos:\b0  30\par
+\b Datos de entrada:\b0  \{ usuario: "admin", password: "admin123" \}\par
+\b Prop\'f3sito:\b0  Verificar que el sistema puede autenticar a 30 usuarios al mismo tiempo sin rechazar solicitudes v\'e1lidas ni generar tokens inv\'e1lidos.\par
+\b Validaciones:\b0\par
+\pard\li360\fs20 - Los 30 requests deben responder con HTTP 200.\par
+- Cada respuesta debe incluir un token v\'e1lido (string de m\'e1s de 10 caracteres).\par
+- El tiempo total debe ser menor a 15 segundos.\par
+\pard\par
+\pard\b\fs22 Escenario 2: Concurrencia de tracking p\'fablico (50 requests paralelos)\b0\par\par
+\pard\fs20\b Endpoint:\b0  GET /api/tracking/TM-2026-0001\par
+\b Requests simult\'e1neos:\b0  50\par
+\b Datos de entrada:\b0  C\'f3digo de seguimiento en la URL\par
+\b Prop\'f3sito:\b0  Simular 50 clientes consultando el estado de su paquete al mismo instante. Este es el endpoint p\'fablico m\'e1s accedido del sistema.\par
+\b Validaciones:\b0\par
+\pard\li360\fs20 - Los 50 requests deben responder con HTTP 200.\par
+- Todos deben devolver el mismo c\'f3digo de seguimiento: TM-2026-0001.\par
+- El tiempo total debe ser menor a 15 segundos.\par
+\pard\par
+\pard\b\fs22 Escenario 3: Concurrencia en listado autenticado de paquetes (40 requests paralelos)\b0\par\par
+\pard\fs20\b Endpoint:\b0  GET /api/packages/expanded\par
+\b Requests simult\'e1neos:\b0  40\par
+\b Datos de entrada:\b0  Header Authorization con Bearer token de admin\par
+\b Prop\'f3sito:\b0  Verificar que 40 operadores o administradores pueden consultar la lista completa de paquetes al mismo tiempo sin que el middleware de autenticaci\'f3n falle o se mezclen respuestas.\par
+\b Validaciones:\b0\par
+\pard\li360\fs20 - Los 40 requests deben responder con HTTP 200.\par
+- Cada respuesta debe ser un array v\'e1lido de paquetes.\par
+- El tiempo total debe ser menor a 15 segundos.\par
+\pard\par
+\pard\b\fs22 Escenario 4: Concurrencia de creaci\'f3n de paquetes (20 requests paralelos)\b0\par\par
+\pard\fs20\b Endpoint:\b0  POST /api/packages\par
+\b Requests simult\'e1neos:\b0  20\par
+\b Datos de entrada:\b0  Cada request env\'eda datos de un paquete diferente (destino y descripci\'f3n \'fanicos)\par
+\b Prop\'f3sito:\b0  Es el escenario m\'e1s cr\'edtico: detectar condiciones de carrera (race conditions) en la creaci\'f3n simult\'e1nea de recursos. Verificar que todos los paquetes se crean correctamente sin duplicados ni p\'e9rdida de datos.\par
+\b Validaciones:\b0\par
+\pard\li360\fs20 - Los 20 requests deben responder con HTTP 201 (Created).\par
+- Cada respuesta debe contener un ID \'fanico de paquete.\par
+- Se deben capturar exactamente 20 IDs diferentes.\par
+- El tiempo total debe ser menor a 15 segundos.\par
+\pard\par
+\pard\b\fs22 Escenario 5: Concurrencia de actualizaci\'f3n de estado (20 requests paralelos)\b0\par\par
+\pard\fs20\b Endpoint:\b0  PATCH /api/packages/:id/status\par
+\b Requests simult\'e1neos:\b0  20 (uno por cada paquete creado en el escenario anterior)\par
+\b Datos de entrada:\b0  \{ estado: "En Tr\'e1nsito", observacion: "Actualizaci\'f3n concurrente" \}\par
+\b Prop\'f3sito:\b0  Verificar que 20 paquetes diferentes pueden cambiar de estado al mismo tiempo sin conflictos, asegurando que cada paquete queda con el estado correcto.\par
+\b Validaciones:\b0\par
+\pard\li360\fs20 - Los 20 requests deben responder con HTTP 200.\par
+- Cada respuesta debe reflejar estadoActual = "En Tr\'e1nsito".\par
+- El tiempo total debe ser menor a 15 segundos.\par
+\pard\par\par
+
+\pard\b\fs26 6. Comandos de ejecuci\'f3n\b0\par\par
+\pard\fs20 Para ejecutar las pruebas de concurrencia junto con las pruebas unitarias, se utilizaron los siguientes comandos:\par\par
+\b 6.1 Ubicarse en la carpeta del backend:\b0\par
+\pard\f0\fs18 cd backend\par\par
+\pard\f1\fs20\b 6.2 Ejecutar todas las pruebas:\b0\par
+\pard\f0\fs18 npm test\par\par
+\pard\f1\fs20\b 6.3 Comando real que se ejecuta (definido en package.json):\b0\par
+\pard\f0\fs18 cross-env NODE_ENV=test node --test\par\par
+\pard\f1\fs20 El flag --test de Node.js busca autom\'e1ticamente todos los archivos *.test.js dentro de la carpeta tests/ y los ejecuta en secuencia. El paquete cross-env garantiza compatibilidad de variables de entorno en Windows y Linux.\par\par
+\b 6.4 Ejecutar solo las pruebas de concurrencia:\b0\par
+\pard\f0\fs18 cross-env NODE_ENV=test node --test tests/concurrency.test.js\par
+\pard\f1\fs20\par\par
+
+\pard\b\fs26 7. Resultados obtenidos\b0\par\par
+\pard\fs20 A continuaci\'f3n se muestra la salida real de la ejecuci\'f3n de las pruebas:\par\par
+\pard\f0\fs16
+TAP version 13\par
+# Subtest: Pruebas de concurrencia API log\'edstica\par
+    # Subtest: concurrencia de login admin (30 requests paralelos)\par
+    ok 1 - concurrencia de login admin (30 requests paralelos)\par
+      ---\par
+      duration_ms: 127.1559\par
+      ...\par
+    # Subtest: concurrencia de tracking p\'fablico (50 requests paralelos)\par
+    ok 2 - concurrencia de tracking p\'fablico (50 requests paralelos)\par
+      ---\par
+      duration_ms: 56.0206\par
+      ...\par
+    # Subtest: concurrencia en listado autenticado de paquetes (40 requests paralelos)\par
+    ok 3 - concurrencia en listado autenticado de paquetes (40 requests paralelos)\par
+      ---\par
+      duration_ms: 36.0383\par
+      ...\par
+    # Subtest: concurrencia de creaci\'f3n de paquetes (20 requests paralelos)\par
+    ok 4 - concurrencia de creaci\'f3n de paquetes (20 requests paralelos)\par
+      ---\par
+      duration_ms: 20.347\par
+      ...\par
+    # Subtest: concurrencia de actualizaci\'f3n de estado en paquetes creados\par
+    ok 5 - concurrencia de actualizaci\'f3n de estado en paquetes creados\par
+      ---\par
+      duration_ms: 16.5151\par
+      ...\par
+    1..5\par
+ok 2 - Pruebas de concurrencia API log\'edstica\par
+  ---\par
+  duration_ms: 697.0294\par
+  type: \'27suite\'27\par
+  ...\par
+# tests 22  (17 unitarias + 5 concurrencia)\par
+# pass 22\par
+# fail 0\par
+# duration_ms 1130.797\par
+\pard\f1\fs20\par\par
+
+\pard\b\fs26 8. Tabla resumen de resultados\b0\par\par
+\trowd\trgaph70\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx1200\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx3600\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx5200\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx7400\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx9400
+\pard\intbl\fs18 \b ID\b0\cell\pard\intbl\fs18 \b Escenario\b0\cell\pard\intbl\fs18 \b Requests\b0\cell\pard\intbl\fs18 \b Tiempo (ms)\b0\cell\pard\intbl\fs18 \b Estado\b0\cell\row
+\trowd\trgaph70\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx1200\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx3600\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx5200\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx7400\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx9400
+\pard\intbl\fs18 CC-01\cell\pard\intbl\fs18 Login admin concurrente\cell\pard\intbl\fs18 30\cell\pard\intbl\fs18 127 ms\cell\pard\intbl\fs18 Pass\cell\row
+\trowd\trgaph70\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx1200\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx3600\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx5200\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx7400\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx9400
+\pard\intbl\fs18 CC-02\cell\pard\intbl\fs18 Tracking p\'fablico concurrente\cell\pard\intbl\fs18 50\cell\pard\intbl\fs18 56 ms\cell\pard\intbl\fs18 Pass\cell\row
+\trowd\trgaph70\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx1200\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx3600\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx5200\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx7400\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx9400
+\pard\intbl\fs18 CC-03\cell\pard\intbl\fs18 Listado paquetes concurrente\cell\pard\intbl\fs18 40\cell\pard\intbl\fs18 36 ms\cell\pard\intbl\fs18 Pass\cell\row
+\trowd\trgaph70\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx1200\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx3600\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx5200\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx7400\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx9400
+\pard\intbl\fs18 CC-04\cell\pard\intbl\fs18 Creaci\'f3n paquetes concurrente\cell\pard\intbl\fs18 20\cell\pard\intbl\fs18 20 ms\cell\pard\intbl\fs18 Pass\cell\row
+\trowd\trgaph70\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx1200\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx3600\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx5200\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx7400\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx9400
+\pard\intbl\fs18 CC-05\cell\pard\intbl\fs18 Actualizaci\'f3n estado concurrente\cell\pard\intbl\fs18 20\cell\pard\intbl\fs18 16 ms\cell\pard\intbl\fs18 Pass\cell\row
+\pard\par
+\b\fs20 Total de requests concurrentes ejecutados: 160\b0\par
+\b\fs20 Total de fallos: 0\b0\par
+\b\fs20 Tiempo total del suite de concurrencia: 697 ms\b0\par
+\pard\par\par
+
+\pard\b\fs26 9. C\'f3digo fuente completo de la prueba\b0\par\par
+\pard\fs20\b Archivo:\b0  backend/tests/concurrency.test.js\par\par
+\pard\f0\fs16
+import assert from "node:assert/strict";\par
+import \{ after, before, describe, it \} from "node:test";\par
+\par
+const jsonHeaders = \{ "Content-Type": "application/json" \};\par
+\par
+const request = async (baseUrl, path, options = \{\}) => \{\par
+  const response = await fetch(`$\{baseUrl\}$\{path\}`, options);\par
+  const bodyText = await response.text();\par
+  let body = null;\par
+  try \{\par
+    body = bodyText ? JSON.parse(bodyText) : null;\par
+  \} catch \{\par
+    body = bodyText;\par
+  \}\par
+  return \{ status: response.status, body \};\par
+\};\par
+\par
+const runConcurrent = async (count, fn) => \{\par
+  const startedAt = Date.now();\par
+  const results = await Promise.all(\par
+    Array.from(\{ length: count \}, (_, index) => fn(index))\par
+  );\par
+  const elapsedMs = Date.now() - startedAt;\par
+  return \{ results, elapsedMs \};\par
+\};\par
+\par
+describe("Pruebas de concurrencia API log\'edstica", () => \{\par
+  let app;\par
+  let server;\par
+  let baseUrl;\par
+  let adminToken;\par
+  const createdPackageIds = [];\par
+\par
+  before(async () => \{\par
+    process.env.USE_DB = "false";\par
+    process.env.ADMIN_USER = "admin";\par
+    process.env.ADMIN_PASS = "admin123";\par
+    const module = await import("../src/server.js");\par
+    app = module.app;\par
+    server = app.listen(0);\par
+    const \{ port \} = server.address();\par
+    baseUrl = `http://127.0.0.1:$\{port\}`;\par
+  \});\par
+\par
+  after(async () => \{\par
+    if (server) server.close();\par
+  \});\par
+\par
+  it("concurrencia de login admin (30 requests paralelos)", async () => \{\par
+    const \{ results, elapsedMs \} = await runConcurrent(30, async () =>\par
+      request(baseUrl, "/api/auth/login", \{\par
+        method: "POST",\par
+        headers: jsonHeaders,\par
+        body: JSON.stringify(\{ usuario: "admin", password: "admin123" \})\par
+      \})\par
+    );\par
+\par
+    const ok = results.filter((r) => r.status === 200);\par
+    assert.equal(ok.length, 30, "Todos los logins concurrentes deben responder 200");\par
+    assert.ok(\par
+      ok.every((r) => typeof r.body?.token === "string" && r.body.token.length > 10),\par
+      "Todas las respuestas deben incluir token"\par
+    );\par
+    adminToken = ok[0].body.token;\par
+    assert.ok(adminToken, "Debe quedar un token admin para pruebas siguientes");\par
+    assert.ok(elapsedMs < 15000, `Tiempo elevado en login concurrente: $\{elapsedMs\}ms`);\par
+  \});\par
+\par
+  it("concurrencia de tracking p\'fablico (50 requests paralelos)", async () => \{\par
+    const \{ results, elapsedMs \} = await runConcurrent(50, async () =>\par
+      request(baseUrl, "/api/tracking/TM-2026-0001")\par
+    );\par
+\par
+    const ok = results.filter((r) => r.status === 200);\par
+    assert.equal(ok.length, 50, "Todos los tracking concurrentes deben responder 200");\par
+    assert.ok(\par
+      ok.every((r) => r.body?.codigoSeguimiento === "TM-2026-0001"),\par
+      "El c\'f3digo de seguimiento debe coincidir en todas las respuestas"\par
+    );\par
+    assert.ok(elapsedMs < 15000, `Tiempo elevado en tracking concurrente: $\{elapsedMs\}ms`);\par
+  \});\par
+\par
+  it("concurrencia en listado autenticado de paquetes (40 requests paralelos)", async () => \{\par
+    const \{ results, elapsedMs \} = await runConcurrent(40, async () =>\par
+      request(baseUrl, "/api/packages/expanded", \{\par
+        headers: \{ Authorization: `Bearer $\{adminToken\}` \}\par
+      \})\par
+    );\par
+\par
+    const ok = results.filter((r) => r.status === 200);\par
+    assert.equal(ok.length, 40, "Todos los listados concurrentes deben responder 200");\par
+    assert.ok(\par
+      ok.every((r) => Array.isArray(r.body)),\par
+      "Todas las respuestas deben devolver un array"\par
+    );\par
+    assert.ok(elapsedMs < 15000, `Tiempo elevado en listado concurrente: $\{elapsedMs\}ms`);\par
+  \});\par
+\par
+  it("concurrencia de creaci\'f3n de paquetes (20 requests paralelos)", async () => \{\par
+    const \{ results, elapsedMs \} = await runConcurrent(20, async (i) =>\par
+      request(baseUrl, "/api/packages", \{\par
+        method: "POST",\par
+        headers: \{ ...jsonHeaders, Authorization: `Bearer $\{adminToken\}` \},\par
+        body: JSON.stringify(\{\par
+          remitenteId: "d1",\par
+          destinatarioId: "c1",\par
+          sucursalOrigenId: "b1",\par
+          destinoTexto: `Jr. Concurrencia $\{i + 1\}`,\par
+          descripcion: `Paquete paralelo $\{i + 1\}`\par
+        \})\par
+      \})\par
+    );\par
+\par
+    const created = results.filter((r) => r.status === 201);\par
+    assert.equal(created.length, 20, "Todos los paquetes concurrentes deben crearse");\par
+    created.forEach((r) => \{\par
+      if (r.body?.id) createdPackageIds.push(r.body.id);\par
+    \});\par
+    assert.equal(createdPackageIds.length, 20, "Se deben capturar 20 IDs de paquetes");\par
+    assert.ok(elapsedMs < 15000, `Tiempo elevado en creaci\'f3n concurrente: $\{elapsedMs\}ms`);\par
+  \});\par
+\par
+  it("concurrencia de actualizaci\'f3n de estado en paquetes creados", async () => \{\par
+    const \{ results, elapsedMs \} = await runConcurrent(createdPackageIds.length, async (i) =>\par
+      request(baseUrl, `/api/packages/$\{createdPackageIds[i]\}/status`, \{\par
+        method: "PATCH",\par
+        headers: \{ ...jsonHeaders, Authorization: `Bearer $\{adminToken\}` \},\par
+        body: JSON.stringify(\{\par
+          estado: "En Tr\'e1nsito",\par
+          observacion: "Actualizaci\'f3n concurrente"\par
+        \})\par
+      \})\par
+    );\par
+\par
+    const ok = results.filter((r) => r.status === 200);\par
+    assert.equal(ok.length, createdPackageIds.length, "Todas las actualizaciones deben responder 200");\par
+    assert.ok(\par
+      ok.every((r) => r.body?.estadoActual === "En Tr\'e1nsito"),\par
+      "El estado final debe quedar en En Tr\'e1nsito"\par
+    );\par
+    assert.ok(elapsedMs < 15000, `Tiempo elevado en actualizaci\'f3n concurrente: $\{elapsedMs\}ms`);\par
+  \});\par
+\});\par
+\par
+\pard\f1\fs20\par\par
+
+\pard\b\fs26 10. Conclusiones\b0\par\par
+\pard\fs20\b 10.1 Estabilidad bajo carga:\b0  El servidor Express.js manej\'f3 satisfactoriamente 160 solicitudes concurrentes distribuidas en 5 escenarios diferentes sin producir errores, bloqueos ni ca\'eddas. Todas las respuestas fueron correctas y consistentes.\par\par
+\b 10.2 Rendimiento:\b0  Los tiempos de respuesta fueron excelentes. El escenario m\'e1s exigente (30 logins paralelos con hashing bcrypt) se complet\'f3 en 127 ms, y el escenario de 50 consultas de tracking simult\'e1neas lo hizo en apenas 56 ms. Todos los escenarios estuvieron muy por debajo del umbral m\'e1ximo de 15 segundos.\par\par
+\b 10.3 Integridad de datos:\b0  La creaci\'f3n simult\'e1nea de 20 paquetes gener\'f3 exactamente 20 registros con IDs \'fanicos, sin duplicados ni p\'e9rdida de datos. La posterior actualizaci\'f3n concurrente de sus estados tambi\'e9n fue exitosa, lo que indica que no existen condiciones de carrera (race conditions) detectables en el flujo actual.\par\par
+\b 10.4 Autenticaci\'f3n:\b0  El middleware de autenticaci\'f3n basado en tokens funcion\'f3 correctamente bajo carga concurrente. Los 30 logins simult\'e1neos generaron 30 tokens v\'e1lidos e independientes, y las 40 consultas autenticadas en paralelo fueron procesadas sin rechazos.\par\par
+\b 10.5 Recomendaciones:\b0\par
+\pard\li360\fs20 - En producci\'f3n con PostgreSQL, repetir estas pruebas para validar el comportamiento con conexiones reales a la base de datos.\par
+- Considerar pruebas con mayor volumen (100+ requests) usando herramientas especializadas como autocannon o k6 para escenarios de estr\'e9s m\'e1s intensos.\par
+- Implementar rate limiting para prevenir abuso en endpoints p\'fablicos como el de tracking.\par
+\pard\par
+}

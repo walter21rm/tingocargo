@@ -1,0 +1,113 @@
+{\rtf1\ansi\deff0
+{\fonttbl{\f0 Consolas;}{\f1 Arial;}{\f2 Calibri;}}
+\paperw12240\paperh15840\margl1440\margr1440\margt1440\margb1440
+
+\pard\qc\b\fs36\cf19 TRABAJO EN CLASE\b0\cf0\par
+\pard\qc\fs24 Sistema de Transporte y Log\'edstica - LogiMed\par
+\pard\qc\fs20 An\'e1lisis de Comunalidad, Variaci\'f3n e Interfaces\par
+\pard\par\par
+
+\pard\b\fs28 1. PUNTOS DE COMUNALIDAD\b0\par
+\pard\fs22 Son los aspectos que permanecen iguales en toda la aplicaci\'f3n, las estructuras y patrones compartidos.\par
+\pard\par
+
+\pard\b\fs24 1.1 Backend\b0\par
+\pard\fs20 \'95 Patr\'f3n de repositorio: El servidor usa un \'fanico objeto \'ab repo \'bb que puede ser storage (memoria) o storageDb (PostgreSQL). Todas las operaciones pasan por call(repo.funcion, args).\par
+\pard\fs20 \'95 Modelo de datos unificado: Clientes, distribuidoras, sucursales, roles, usuarios y paquetes comparten la misma estructura conceptual en ambos almacenamientos.\par
+\pard\fs20 \'95 Estados de paquete: \'ab En Almac\'e9n \'bb, \'ab En Tr\'e1nsito \'bb, \'ab Entregado \'bb, \'ab Intento fallido \'bb.\par
+\pard\fs20 \'95 Tipos de env\'ed o: distribuidora_cliente y cliente_cliente.\par
+\pard\fs20 \'95 Formato de salida: camelCase (rolId, sucursalId, estadoActual, creadoEn) en todas las respuestas.\par
+\pard\fs20 \'95 Autenticaci\'f3n: Login con usuario/contrase\'f1a, token Bearer en memoria, rutas p\'fablicas (health, login, tracking).\par
+\pard\fs20 \'95 Autorizaci\'f3n por roles: Administrador, Operador log\'edstico, Repartidor con restricciones por rol.\par
+\pard\fs20 \'95 C\'f3digo de seguimiento: Formato TM-\{a\'f1o\}-\{4 d\'edgitos\}.\par
+\pard\par
+
+\pard\b\fs24 1.2 Frontend\b0\par
+\pard\fs20 \'95 Patr\'f3n de p\'e1ginas: Listas con load/useEffect, formularios con emptyForm, fieldErrors, handleChange, handleSubmit.\par
+\pard\fs20 \'95 Componentes compartidos: PhoneField (tel\'e9fonos internacionales), Timeline (historial de estados), AdminLayout, Navbar, Footer.\par
+\pard\fs20 \'95 Servicio API: apiFetch con token Bearer, funciones listX, createX, getXById por recurso.\par
+\pard\fs20 \'95 Protecci\'f3n de rutas: RequireAuth y RequireRole seg\'fan roles permitidos.\par
+\pard\fs20 \'95 Formato de fechas: Intl.DateTimeFormat con zona America/Lima.\par
+\pard\par\par
+
+\pard\b\fs28 2. PUNTOS DE VARIACI\'d3N\b0\par
+\pard\fs22 Son los aspectos que cambian seg\'fan el contexto. Aqu\'ed se identifica d\'f3nde aplicar interfaces.\par
+\pard\par
+
+\pard\b\fs24 2.1 Persistencia (Storage vs Base de datos)\b0\par
+\pard\fs20 \'95 storage.js: Arrays en memoria, s\'edncrono, IDs UUID.\par
+\pard\fs20 \'95 storageDb.js: PostgreSQL, as\'edncrono, IDs SERIAL.\par
+\pard\fs20 \'95 Aplicaci\'f3n de interfaz: Definir un contrato IRepository con m\'e9todos listClients, createClient, listPackages, etc. Ambos storages implementar\'edan esta interfaz.\par
+\pard\par
+
+\pard\b\fs24 2.2 Roles y permisos\b0\par
+\pard\fs20 \'95 Administrador: CRUD completo (usuarios, sucursales, distribuidoras, reportes).\par
+\pard\fs20 \'95 Operador: Paquetes, clientes, distribuidoras; no usuarios.\par
+\pard\fs20 \'95 Repartidor: Solo sus paquetes, marcar entrega/intento fallido, reprogramar.\par
+\pard\fs20 \'95 Aplicaci\'f3n de interfaz: IPermissionChecker con canCreatePackage(role), canViewReport(role), etc.\par
+\pard\par
+
+\pard\b\fs24 2.3 Tipos de env\'ed o\b0\par
+\pard\fs20 \'95 distribuidora_cliente: remitenteId (distribuidora), destinatarioId (cliente).\par
+\pard\fs20 \'95 cliente_cliente: remitenteClienteId (cliente), destinatarioId (cliente).\par
+\pard\fs20 \'95 Aplicaci\'f3n de interfaz: IShippingType con getRemitenteField(), validateRemitenteDestinatario().\par
+\pard\par
+
+\pard\b\fs24 2.4 Autenticaci\'f3n\b0\par
+\pard\fs20 \'95 Usuarios del repositorio: Login contra base de datos con bcrypt.\par
+\pard\fs20 \'95 Admin por variables de entorno: Credenciales fijas en .env como respaldo.\par
+\pard\fs20 \'95 Aplicaci\'f3n de interfaz: IAuthProvider con authenticate(usuario, password).\par
+\pard\par
+
+\pard\b\fs24 2.5 Formatos de reporte\b0\par
+\pard\fs20 \'95 CSV: Texto plano con separador coma.\par
+\pard\fs20 \'95 XLSX: Excel con librer\'ed a xlsx.\par
+\pard\fs20 \'95 Aplicaci\'f3n de interfaz: IReportExporter con export(packages, format).\par
+\pard\par\par
+
+\pard\b\fs28 3. VARIANTES\b0\par
+\pard\fs22 Implementaciones alternativas que coexisten en el sistema.\par
+\pard\par
+
+\pard\b\fs24 3.1 Persistencia\b0\par
+\pard\fs20 \'95 Variante A: Memoria (desarrollo, pruebas r\'e1pidas).\par
+\pard\fs20 \'95 Variante B: PostgreSQL/Supabase (producci\'f3n).\par
+\pard\par
+
+\pard\b\fs24 3.2 Listado de paquetes\b0\par
+\pard\fs20 \'95 Variante A: listPackagesDetailed() para Admin/Operador (todos los paquetes).\par
+\pard\fs20 \'95 Variante B: listPackagesByCourier(id) para Repartidor (solo asignados).\par
+\pard\par
+
+\pard\b\fs24 3.3 Formularios de creaci\'f3n\b0\par
+\pard\fs20 \'95 Variante A: P\'e1ginas dedicadas (AdminClientNew, AdminPackageNew, etc.).\par
+\pard\fs20 \'95 Variante B: Modal inline (crear cliente dentro del formulario de paquete).\par
+\pard\par
+
+\pard\b\fs24 3.4 Reprogramaci\'f3n\b0\par
+\pard\fs20 \'95 Variante A: Desde panel admin (PATCH /api/packages/:id/reprogramar).\par
+\pard\fs20 \'95 Variante B: Desde p\'e1gina p\'fablica de tracking (POST /api/tracking/:code/reprogramar).\par
+\pard\par\par
+
+\pard\b\fs28 4. CAMBIO SUSTANCIAL PARA UNA SIGUIENTE VERSI\'d3N\b0\par
+\pard\fs22 Para la pr\'f3xima versi\'f3n del software, un cambio sustancial ser\'eda:\par
+\pard\par
+
+\pard\b\fs24 4.1 Multi-tenant (m\'faltiples empresas)\b0\par
+\pard\fs20 Permitir que varias empresas o sucursales independientes usen la misma plataforma con datos aislados. Cada empresa tendr\'eda sus propios clientes, distribuidoras, paquetes y usuarios.\par
+\pard\par
+
+\pard\b\fs24 4.2 Impacto en comunalidad y variaci\'f3n\b0\par
+\pard\fs20 \'95 Nueva comunalidad: tenant_id en todas las tablas, middleware que inyecta el tenant del usuario logueado.\par
+\pard\fs20 \'95 Nuevos puntos de variaci\'f3n: IMultiTenantRepository, estrategias de aislamiento (schema por tenant vs columna tenant_id).\par
+\pard\fs20 \'95 Nuevas variantes: Plan b\'e1sico (1 sucursal), plan empresarial (m\'faltiples sucursales), plan corporativo (m\'faltiples empresas).\par
+\pard\par
+
+\pard\b\fs24 4.3 Interfaces a introducir\b0\par
+\pard\fs20 \'95 ITenantContext: obtener tenant actual del request.\par
+\pard\fs20 \'95 ITenantScopedRepository: extender IRepository con filtro por tenant.\par
+\pard\fs20 \'95 IPlanLimits: l\'edmites seg\'fan plan (n\'famero de paquetes, usuarios, sucursales).\par
+\pard\par\par
+
+\pard\qc\fs20 --- Fin del documento ---\par
+}
