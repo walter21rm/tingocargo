@@ -135,6 +135,18 @@ export const payClientPackage = (id, metodoPago) =>
     body: JSON.stringify({ metodoPago: metodoPago || null })
   });
 
+export const prepareCulqiPayment = (id, metodoPago) =>
+  apiFetch(`/api/packages/${id}/pagos/preparar`, {
+    method: "POST",
+    body: JSON.stringify({ metodoPago })
+  });
+
+export const confirmCulqiPayment = (id, payload) =>
+  apiFetch(`/api/packages/${id}/pagos/confirmar`, {
+    method: "POST",
+    body: JSON.stringify(payload)
+  });
+
 /* ── Gestión de paquetes (panel admin) ────────────────────── */
 
 export const updatePackagePrecio = (id, precioEnvio) =>

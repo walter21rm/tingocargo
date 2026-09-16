@@ -24,6 +24,12 @@ import bcrypt from "bcryptjs";
 import * as XLSX from "xlsx";
 import * as memory from "./storage.js";
 import * as db from "./storageDb.js";
+import {
+  amountToCents,
+  createCulqiCharge,
+  createCulqiOrder,
+  getCulqiConfig
+} from "./culqi.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 dotenv.config({ path: path.resolve(__dirname, "../.env") });
@@ -387,6 +393,11 @@ app.get("/api/config/public", (req, res) => {
     telefonos: param.telefonos || {
       paisPorDefecto: "PE",
       paises: []
+    },
+    pagos: {
+      culqiEnabled: getCulqiConfig().enabled,
+      publicKey: getCulqiConfig().publicKey || null,
+      testMode: getCulqiConfig().testMode
     }
   });
 });
@@ -617,7 +628,12 @@ app.patch("/api/client/packages/:id/pagar", async (req, res) => {
     return res.status(501).json({ error: "Pago no disponible" });
   }
   const { metodoPago } = req.body || {};
-  const updated = await call(repo.markPackagePagado, req.params.id, metodoPago);
+  if (metodoPago === "tarjeta" || metodoPago === "yape") {
+    return res.status(400).json({
+      error: "El pago con tarjeta o Yape debe completarse con Culqi"
+    });
+  }
+  const updated = await call(repo.markPackagePagado, req.params.id, "efectivo");
   res.json(updated);
 });
 
@@ -651,11 +667,150 @@ app.patch("/api/packages/:id/registrar-pago-destino", async (req, res) => {
     return res.status(501).json({ error: "Pago no disponible" });
   }
   const { metodoPago } = req.body || {};
-  const validMethods = METODOS_PAGO;
-  const method = validMethods.includes(metodoPago) ? metodoPago : "efectivo";
-  const updated = await call(repo.markPackagePagado, req.params.id, method);
-  logActivity(req.authUser.id, req.authUser.nombre, "payment", "paquete", `Pago registrado: ${updated.codigoSeguimiento || req.params.id} — ${method} — S/${updated.precioEnvio || 0}`);
+  if (metodoPago === "tarjeta" || metodoPago === "yape") {
+    return res.status(400).json({
+      error: "El pago con tarjeta o Yape debe completarse con Culqi"
+    });
+  }
+  const updated = await call(repo.markPackagePagado, req.params.id, "efectivo");
+  logActivity(req.authUser.id, req.authUser.nombre, "payment", "paquete", `Pago registrado: ${updated.codigoSeguimiento || req.params.id} — efectivo — S/${updated.precioEnvio || 0}`);
   res.json(updated);
+});
+
+const denyIfNotPayable = (req, pkg) => {
+  if (!pkg) return { status: 404, error: "Paquete no encontrado" };
+  if (pkg.pagado) return { status: 400, error: "El paquete ya está pagado" };
+  if (pkg.pesoKg > TARIFA_PESO_LIMITE && (!pkg.precioEnvio || pkg.precioEnvio <= 0)) {
+    return { status: 400, error: "El operador debe asignar el precio primero" };
+  }
+  const roleName = req.authUser?.roleName;
+  if (roleName === "Cliente") {
+    const isRemitente = String(pkg.remitenteClienteId) === String(req.authUser.clienteId);
+    const isDestinatario = String(pkg.destinatarioId) === String(req.authUser.clienteId);
+    if (pkg.quienPaga === "remitente" && !isRemitente) {
+      return { status: 403, error: "Solo el remitente puede pagar este paquete" };
+    }
+    if (pkg.quienPaga === "destinatario" && !isDestinatario) {
+      return { status: 403, error: "Solo el destinatario puede pagar este paquete" };
+    }
+    if (!isRemitente && !isDestinatario) {
+      return { status: 403, error: "No autorizado" };
+    }
+    return null;
+  }
+  if (roleName === "Repartidor") {
+    const repartidorId = pkg.repartidorId || pkg.repartidor_id;
+    if (String(repartidorId) !== String(req.authUser.id)) {
+      return { status: 403, error: "Solo el repartidor asignado puede registrar el pago" };
+    }
+    return null;
+  }
+  if (roleName === "Administrador" || roleName === "Operador logístico") {
+    return null;
+  }
+  return { status: 403, error: "No autorizado" };
+};
+
+/**
+ * POST /api/packages/:id/pagos/preparar — Crea orden Culqi (necesaria para Yape)
+ * y devuelve la llave pública + monto en céntimos para abrir el Checkout.
+ */
+app.post("/api/packages/:id/pagos/preparar", async (req, res) => {
+  const culqi = getCulqiConfig();
+  if (!culqi.enabled) {
+    return res.status(503).json({
+      error: "Pagos con tarjeta y Yape no configurados. Agrega CULQI_PUBLIC_KEY y CULQI_SECRET_KEY."
+    });
+  }
+  const pkg = await call(repo.getPackageById, req.params.id);
+  const denied = denyIfNotPayable(req, pkg);
+  if (denied) return res.status(denied.status).json({ error: denied.error });
+
+  const metodoPago = req.body?.metodoPago === "yape" ? "yape" : "tarjeta";
+  const amount = amountToCents(pkg.precioEnvio);
+  if (amount < 100) {
+    return res.status(400).json({ error: "El monto mínimo de pago es S/ 1.00" });
+  }
+
+  let orderId = null;
+  if (metodoPago === "yape") {
+    try {
+      const order = await createCulqiOrder({
+        amount,
+        description: `Envío ${pkg.codigoSeguimiento}`,
+        orderNumber: `TC-${pkg.id}-${Date.now()}`,
+        client: req.authUser
+      });
+      orderId = order.id;
+    } catch (err) {
+      return res.status(400).json({ error: err.message || "No se pudo crear la orden de Yape" });
+    }
+  }
+
+  res.json({
+    publicKey: culqi.publicKey,
+    testMode: culqi.testMode,
+    amount,
+    currency: "PEN",
+    orderId,
+    email: req.authUser?.email || "",
+    codigoSeguimiento: pkg.codigoSeguimiento,
+    metodoPago
+  });
+});
+
+/**
+ * POST /api/packages/:id/pagos/confirmar — Crea el cargo en Culqi con el token
+ * y recién entonces marca el paquete como pagado.
+ */
+app.post("/api/packages/:id/pagos/confirmar", async (req, res) => {
+  const culqi = getCulqiConfig();
+  if (!culqi.enabled) {
+    return res.status(503).json({
+      error: "Pagos con tarjeta y Yape no configurados."
+    });
+  }
+  const pkg = await call(repo.getPackageById, req.params.id);
+  const denied = denyIfNotPayable(req, pkg);
+  if (denied) return res.status(denied.status).json({ error: denied.error });
+
+  const { tokenId, email, metodoPago } = req.body || {};
+  if (!tokenId) {
+    return res.status(400).json({ error: "Falta el token de Culqi" });
+  }
+  const method = metodoPago === "yape" ? "yape" : "tarjeta";
+  const amount = amountToCents(pkg.precioEnvio);
+  const chargeEmail = textValue(email) || req.authUser?.email || "pagos@tingocargo.com";
+
+  try {
+    const charge = await createCulqiCharge({
+      amount,
+      email: chargeEmail,
+      sourceId: tokenId,
+      description: `Envío ${pkg.codigoSeguimiento}`,
+      metadata: {
+        paqueteId: String(pkg.id),
+        codigo: pkg.codigoSeguimiento,
+        metodo: method
+      }
+    });
+    if (charge.outcome && charge.outcome.type && charge.outcome.type !== "venta_exitosa") {
+      return res.status(402).json({
+        error: charge.outcome.user_message || "El pago no fue aprobado"
+      });
+    }
+    const updated = await call(repo.markPackagePagado, req.params.id, method);
+    logActivity(
+      req.authUser.id,
+      req.authUser.nombre,
+      "payment",
+      "paquete",
+      `Pago Culqi: ${updated.codigoSeguimiento} — ${method} — S/${updated.precioEnvio || 0} — ${charge.id || ""}`
+    );
+    return res.json({ ...updated, culqiChargeId: charge.id || null });
+  } catch (err) {
+    return res.status(err.status || 400).json({ error: err.message || "No se pudo cobrar" });
+  }
 });
 
 /* ── Rutas de catálogos (clientes, roles, sucursales, distribuidoras) ── */

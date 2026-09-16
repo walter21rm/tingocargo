@@ -5,7 +5,8 @@
  */
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { getPackageById, payClientPackage, getUser } from "../services/api.js";
+import { getPackageById, payClientPackage, getUser, prepareCulqiPayment, confirmCulqiPayment } from "../services/api.js";
+import { openCulqiCheckout } from "../services/culqiCheckout.js";
 import Timeline from "../components/Timeline.jsx";
 
 const METODOS_PAGO = [
@@ -45,7 +46,6 @@ const ClientPackageDetail = () => {
   const [payLoading, setPayLoading] = useState(false);
   const [paymentModalOpen, setPaymentModalOpen] = useState(false);
   const [selectedMethod, setSelectedMethod] = useState(null);
-  const [cardForm, setCardForm] = useState({ numero: "", vencimiento: "", cvv: "" });
 
   const load = async () => {
     try {
@@ -87,7 +87,6 @@ const ClientPackageDetail = () => {
       setNotice("Pago registrado correctamente.");
       setPaymentModalOpen(false);
       setSelectedMethod(null);
-      setCardForm({ numero: "", vencimiento: "", cvv: "" });
       await load();
     } catch (err) {
       setError(err.message || "No se pudo registrar el pago.");
@@ -101,47 +100,39 @@ const ClientPackageDetail = () => {
     setError("");
     setPaymentModalOpen(true);
     setSelectedMethod(null);
-    setCardForm({ numero: "", vencimiento: "", cvv: "" });
   };
 
   const handleSimulatePayment = async () => {
-    if (selectedMethod === "tarjeta") {
-      const { numero, vencimiento, cvv } = cardForm;
-      const num = numero.replace(/\D/g, "");
-      if (num.length !== 16) {
-        setError("Ingresa un número de tarjeta válido (16 dígitos)");
-        return;
+    if (selectedMethod === "tarjeta" || selectedMethod === "yape") {
+      setError("");
+      setPayLoading(true);
+      try {
+        const prep = await prepareCulqiPayment(pkg.id, selectedMethod);
+        const token = await openCulqiCheckout({
+          publicKey: prep.publicKey,
+          amount: prep.amount,
+          orderId: prep.orderId,
+          metodo: selectedMethod,
+          title: `TingoCargo ${prep.codigoSeguimiento}`
+        });
+        await confirmCulqiPayment(pkg.id, {
+          tokenId: token.tokenId,
+          email: token.email || prep.email,
+          metodoPago: selectedMethod
+        });
+        setNotice("Pago aprobado.");
+        setPaymentModalOpen(false);
+        setSelectedMethod(null);
+        await load();
+      } catch (err) {
+        setError(err.message || "No se pudo completar el pago.");
+      } finally {
+        setPayLoading(false);
       }
-      const v = vencimiento.replace(/\s/g, "");
-      if (!/^\d{2}\/\d{2}$/.test(v)) {
-        setError("Formato de vencimiento: MM/AA");
-        return;
-      }
-      const [mm, aa] = v.split("/").map(Number);
-      if (mm < 1 || mm > 12) {
-        setError("Mes inválido (01-12)");
-        return;
-      }
-      if (cvv.replace(/\D/g, "").length < 3) {
-        setError("CVV debe tener al menos 3 dígitos");
-        return;
-      }
+      return;
     }
     setError("");
-    setPayLoading(true);
-    await new Promise((r) => setTimeout(r, 1500));
     await confirmPayment();
-  };
-
-  const formatCardNumber = (v) => {
-    const d = v.replace(/\D/g, "").slice(0, 16);
-    return d.replace(/(\d{4})(?=\d)/g, "$1 ");
-  };
-
-  const formatExpiry = (v) => {
-    const d = v.replace(/\D/g, "").slice(0, 4);
-    if (d.length >= 2) return `${d.slice(0, 2)}/${d.slice(2)}`;
-    return d;
   };
 
   if (!pkg && !error) {
@@ -282,80 +273,24 @@ const ClientPackageDetail = () => {
                 </div>
               ) : selectedMethod === "tarjeta" ? (
                 <div className="space-y-4">
-                  <p className="text-sm text-slate-600">Simulación de pago con tarjeta</p>
-                  {error && (
-                    <div className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">
-                      {error}
-                    </div>
-                  )}
-                  <label className="block text-sm text-slate-600">
-                    Número de tarjeta
-                    <input
-                      type="text"
-                      value={cardForm.numero}
-                      onChange={(e) =>
-                        setCardForm((prev) => ({
-                          ...prev,
-                          numero: formatCardNumber(e.target.value)
-                        }))
-                      }
-                      placeholder="0000 0000 0000 0000"
-                      maxLength={19}
-                      className="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm"
-                    />
-                  </label>
-                  <div className="grid grid-cols-2 gap-4">
-                    <label className="block text-sm text-slate-600">
-                      Vencimiento (MM/AA)
-                      <input
-                        type="text"
-                        value={cardForm.vencimiento}
-                        onChange={(e) =>
-                          setCardForm((prev) => ({
-                            ...prev,
-                            vencimiento: formatExpiry(e.target.value)
-                          }))
-                        }
-                        placeholder="MM/AA"
-                        maxLength={5}
-                        className="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm"
-                      />
-                    </label>
-                    <label className="block text-sm text-slate-600">
-                      CVV
-                      <input
-                        type="text"
-                        inputMode="numeric"
-                        value={cardForm.cvv}
-                        onChange={(e) =>
-                          setCardForm((prev) => ({
-                            ...prev,
-                            cvv: e.target.value.replace(/\D/g, "").slice(0, 4)
-                          }))
-                        }
-                        placeholder="123"
-                        maxLength={4}
-                        className="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm"
-                      />
-                    </label>
+                  <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-center">
+                    <span className="text-3xl">💳</span>
+                    <p className="mt-2 text-sm text-slate-700">
+                      Se abrirá Culqi para cobrar <strong>{pkg?.precioEnvio || 0} soles</strong> con tarjeta.
+                    </p>
+                    <p className="mt-2 text-xs text-slate-500">
+                      Modo prueba: usa la tarjeta 4111 1111 1111 1111, CVV 123 y una fecha futura.
+                    </p>
                   </div>
                 </div>
               ) : selectedMethod === "yape" ? (
                 <div className="space-y-4">
-                  <div className="flex flex-col items-center rounded-xl border-2 border-dashed border-slate-200 bg-slate-50 p-8">
-                    <div className="flex h-32 w-32 items-center justify-center rounded-2xl bg-white text-4xl shadow-sm">
-                      📱
-                    </div>
-                    <p className="mt-4 text-center text-sm font-medium text-slate-700">
-                      Abre Yape y escanea el código
-                    </p>
-                    <p className="mt-1 text-center text-xs text-slate-500">
-                      O ingresa el monto manualmente: {pkg?.precioEnvio || 0} soles
+                  <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-center">
+                    <span className="text-3xl">📱</span>
+                    <p className="mt-2 text-sm text-slate-700">
+                      Se abrirá Culqi para pagar <strong>{pkg?.precioEnvio || 0} soles</strong> con Yape (número y código de aprobación de la app).
                     </p>
                   </div>
-                  <p className="text-center text-xs text-slate-500">
-                    Simulación: haz clic en confirmar para registrar el pago
-                  </p>
                 </div>
               ) : selectedMethod === "efectivo" ? (
                 <div className="space-y-4">
@@ -383,10 +318,14 @@ const ClientPackageDetail = () => {
               <button
                 type="button"
                 onClick={handleSimulatePayment}
-                disabled={payLoading}
+                disabled={payLoading || !selectedMethod}
                 className="flex-1 rounded-xl bg-brand-600 px-5 py-2.5 text-sm font-semibold text-white disabled:opacity-60"
               >
-                {payLoading ? "Procesando..." : "Confirmar pago"}
+                {payLoading
+                  ? "Procesando..."
+                  : selectedMethod === "tarjeta" || selectedMethod === "yape"
+                    ? "Pagar ahora"
+                    : "Confirmar pago"}
               </button>
             </div>
           </div>

@@ -16,8 +16,11 @@ import {
   updatePackageRepartidor,
   listOperators,
   listCouriers,
-  registrarPagoDestino
+  registrarPagoDestino,
+  prepareCulqiPayment,
+  confirmCulqiPayment
 } from "../services/api.js";
+import { openCulqiCheckout } from "../services/culqiCheckout.js";
 import ConfirmModal from "../components/ConfirmModal.jsx";
 
 const normalizeDate = (value) => {
@@ -308,8 +311,25 @@ const AdminPackageDetail = () => {
     setError("");
     setNotice("");
     try {
-      await registrarPagoDestino(pkg.id, pagoMetodo);
-      setNotice(`Pago registrado (${pagoMetodo}).`);
+      if (pagoMetodo === "tarjeta" || pagoMetodo === "yape") {
+        const prep = await prepareCulqiPayment(pkg.id, pagoMetodo);
+        const token = await openCulqiCheckout({
+          publicKey: prep.publicKey,
+          amount: prep.amount,
+          orderId: prep.orderId,
+          metodo: pagoMetodo,
+          title: `TingoCargo ${prep.codigoSeguimiento}`
+        });
+        await confirmCulqiPayment(pkg.id, {
+          tokenId: token.tokenId,
+          email: token.email || prep.email,
+          metodoPago: pagoMetodo
+        });
+        setNotice(`Pago aprobado (${pagoMetodo}).`);
+      } else {
+        await registrarPagoDestino(pkg.id, "efectivo");
+        setNotice("Pago registrado (efectivo).");
+      }
       setPagoModalOpen(false);
       setPagoMetodo(null);
       await loadPackage();
@@ -1144,30 +1164,24 @@ const AdminPackageDetail = () => {
                 </div>
               ) : pagoMetodo === "tarjeta" ? (
                 <div className="space-y-4">
-                  <p className="text-sm text-slate-600">Simulación de pago con tarjeta</p>
                   <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-center">
                     <span className="text-3xl">💳</span>
                     <p className="mt-2 text-sm text-slate-700">
-                      Se registrará el pago de <strong>{pkg?.precioEnvio || 0} soles</strong> con tarjeta.
+                      Se abrirá Culqi para cobrar <strong>{pkg?.precioEnvio || 0} soles</strong> con tarjeta.
+                    </p>
+                    <p className="mt-2 text-xs text-slate-500">
+                      Modo prueba: 4111 1111 1111 1111, CVV 123, fecha futura.
                     </p>
                   </div>
                 </div>
               ) : pagoMetodo === "yape" ? (
                 <div className="space-y-4">
-                  <div className="flex flex-col items-center rounded-xl border-2 border-dashed border-slate-200 bg-slate-50 p-8">
-                    <div className="flex h-32 w-32 items-center justify-center rounded-2xl bg-white text-4xl shadow-sm">
-                      📱
-                    </div>
-                    <p className="mt-4 text-center text-sm font-medium text-slate-700">
-                      Abre Yape y escanea el código
-                    </p>
-                    <p className="mt-1 text-center text-xs text-slate-500">
-                      Monto: {pkg?.precioEnvio || 0} soles
+                  <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-center">
+                    <span className="text-3xl">📱</span>
+                    <p className="mt-2 text-sm text-slate-700">
+                      Se abrirá Culqi para pagar <strong>{pkg?.precioEnvio || 0} soles</strong> con Yape.
                     </p>
                   </div>
-                  <p className="text-center text-xs text-slate-500">
-                    Simulación: haz clic en confirmar para registrar el pago
-                  </p>
                 </div>
               ) : pagoMetodo === "efectivo" ? (
                 <div className="space-y-4">
@@ -1198,7 +1212,11 @@ const AdminPackageDetail = () => {
                   disabled={pagoLoading}
                   className="flex-1 rounded-xl bg-brand-600 px-5 py-2.5 text-sm font-semibold text-white disabled:opacity-60"
                 >
-                  {pagoLoading ? "Procesando..." : "Confirmar pago"}
+                  {pagoLoading
+                    ? "Procesando..."
+                    : pagoMetodo === "efectivo"
+                      ? "Confirmar pago"
+                      : "Pagar ahora"}
                 </button>
               )}
             </div>
