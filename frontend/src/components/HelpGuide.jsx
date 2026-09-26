@@ -46,8 +46,8 @@ const guides = [
     steps: [
       "Abre el detalle del paquete",
       "El botón 'Registrar pago' aparece cuando hay precio asignado",
-      "Elige tarjeta o Yape para pagar con Culqi, o efectivo si se cobra en mano",
-      "En tarjeta/Yape se abre Culqi; el paquete se marca pagado solo si el cobro sale bien",
+      "Elige tarjeta o Yape para pagar en Mercado Pago, o efectivo si se cobra en mano",
+      "En tarjeta/Yape te redirige a Mercado Pago; el paquete se marca pagado solo si el cobro se aprueba",
       "Una vez pagado, podrás emitir la boleta"
     ]
   },

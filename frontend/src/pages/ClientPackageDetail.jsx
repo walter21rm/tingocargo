@@ -5,8 +5,7 @@
  */
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { getPackageById, payClientPackage, getUser, prepareCulqiPayment, confirmCulqiPayment } from "../services/api.js";
-import { openCulqiCheckout } from "../services/culqiCheckout.js";
+import { getPackageById, payClientPackage, getUser, prepareMpPayment } from "../services/api.js";
 import Timeline from "../components/Timeline.jsx";
 
 const METODOS_PAGO = [
@@ -107,23 +106,10 @@ const ClientPackageDetail = () => {
       setError("");
       setPayLoading(true);
       try {
-        const prep = await prepareCulqiPayment(pkg.id, selectedMethod);
-        const token = await openCulqiCheckout({
-          publicKey: prep.publicKey,
-          amount: prep.amount,
-          orderId: prep.orderId,
-          metodo: selectedMethod,
-          title: `TingoCargo ${prep.codigoSeguimiento}`
-        });
-        await confirmCulqiPayment(pkg.id, {
-          tokenId: token.tokenId,
-          email: token.email || prep.email,
-          metodoPago: selectedMethod
-        });
-        setNotice("Pago aprobado.");
-        setPaymentModalOpen(false);
-        setSelectedMethod(null);
-        await load();
+        const prep = await prepareMpPayment(pkg.id, selectedMethod);
+        if (!prep.checkoutUrl) throw new Error("Mercado Pago no devolvió el enlace de pago");
+        window.location.href = prep.checkoutUrl;
+        return;
       } catch (err) {
         setError(err.message || "No se pudo completar el pago.");
       } finally {
@@ -276,10 +262,10 @@ const ClientPackageDetail = () => {
                   <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-center">
                     <span className="text-3xl">💳</span>
                     <p className="mt-2 text-sm text-slate-700">
-                      Se abrirá Culqi para cobrar <strong>{pkg?.precioEnvio || 0} soles</strong> con tarjeta.
+                      Te llevaremos a Mercado Pago para cobrar <strong>{pkg?.precioEnvio || 0} soles</strong> con tarjeta.
                     </p>
                     <p className="mt-2 text-xs text-slate-500">
-                      Modo prueba: usa la tarjeta 4111 1111 1111 1111, CVV 123 y una fecha futura.
+                      Prueba: Visa 4009 1753 3280 6176, CVV 123, 11/30, titular APRO.
                     </p>
                   </div>
                 </div>
@@ -288,7 +274,7 @@ const ClientPackageDetail = () => {
                   <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-center">
                     <span className="text-3xl">📱</span>
                     <p className="mt-2 text-sm text-slate-700">
-                      Se abrirá Culqi para pagar <strong>{pkg?.precioEnvio || 0} soles</strong> con Yape (número y código de aprobación de la app).
+                      Te llevaremos a Mercado Pago para pagar <strong>{pkg?.precioEnvio || 0} soles</strong> con Yape.
                     </p>
                   </div>
                 </div>

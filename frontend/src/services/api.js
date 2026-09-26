@@ -135,16 +135,16 @@ export const payClientPackage = (id, metodoPago) =>
     body: JSON.stringify({ metodoPago: metodoPago || null })
   });
 
-export const prepareCulqiPayment = (id, metodoPago) =>
+export const prepareMpPayment = (id, metodoPago) =>
   apiFetch(`/api/packages/${id}/pagos/preparar`, {
     method: "POST",
     body: JSON.stringify({ metodoPago })
   });
 
-export const confirmCulqiPayment = (id, payload) =>
-  apiFetch(`/api/packages/${id}/pagos/confirmar`, {
+export const verifyMpPayment = (id, paymentId) =>
+  apiFetch(`/api/packages/${id}/pagos/verificar`, {
     method: "POST",
-    body: JSON.stringify(payload)
+    body: JSON.stringify({ paymentId })
   });
 
 /* ── Gestión de paquetes (panel admin) ────────────────────── */

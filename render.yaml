@@ -20,10 +20,12 @@ services:
         sync: false
       - key: DNI_API_TOKEN
         sync: false
-      - key: CULQI_PUBLIC_KEY
+      - key: MP_ACCESS_TOKEN
         sync: false
-      - key: CULQI_SECRET_KEY
-        sync: false
+      - key: FRONTEND_URL
+        value: https://tingocargo-web.onrender.com
+      - key: BACKEND_URL
+        value: https://tingocargo-api.onrender.com
 
   - type: web
     name: tingocargo-web

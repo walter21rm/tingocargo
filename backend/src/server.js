@@ -25,11 +25,11 @@ import * as XLSX from "xlsx";
 import * as memory from "./storage.js";
 import * as db from "./storageDb.js";
 import {
-  amountToCents,
-  createCulqiCharge,
-  createCulqiOrder,
-  getCulqiConfig
-} from "./culqi.js";
+  createMpPreference,
+  getMpConfig,
+  getMpPayment,
+  parseExternalReference
+} from "./mercadopago.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 dotenv.config({ path: path.resolve(__dirname, "../.env") });
@@ -84,6 +84,10 @@ const METODOS_PAGO = param.paquetes?.metodosPago || ["tarjeta", "yape", "efectiv
 const PREFIJO_SEGUIMIENTO = param.paquetes?.prefijoSeguimiento || "TM-";
 const ESTADOS_PAQUETE = param.paquetes?.estados || ["En Almacén", "En Tránsito", "Entregado", "Intento fallido"];
 const ZONA_HORARIA = conf.servidor?.zonaHoraria || "America/Lima";
+const FRONTEND_PUBLIC_URL =
+  process.env.FRONTEND_URL || "https://tingocargo-web.onrender.com";
+const BACKEND_PUBLIC_URL =
+  process.env.BACKEND_URL || process.env.RENDER_EXTERNAL_URL || "";
 
 /** Mapa en memoria que asocia cada token UUID con los datos del usuario autenticado */
 const authTokens = new Map();
@@ -185,6 +189,7 @@ const isPublicRoute = (req) => {
   if (req.path === "/api/auth/register") return true;
   if (req.path.startsWith("/api/tracking/")) return true;
   if (/^\/api\/dni\/\d+$/.test(req.path)) return true;
+  if (req.path === "/api/pagos/mercadopago/webhook") return true;
   return false;
 };
 
@@ -395,9 +400,8 @@ app.get("/api/config/public", (req, res) => {
       paises: []
     },
     pagos: {
-      culqiEnabled: getCulqiConfig().enabled,
-      publicKey: getCulqiConfig().publicKey || null,
-      testMode: getCulqiConfig().testMode
+      mercadopagoEnabled: getMpConfig().enabled,
+      testMode: getMpConfig().testMode
     }
   });
 });
@@ -630,7 +634,7 @@ app.patch("/api/client/packages/:id/pagar", async (req, res) => {
   const { metodoPago } = req.body || {};
   if (metodoPago === "tarjeta" || metodoPago === "yape") {
     return res.status(400).json({
-      error: "El pago con tarjeta o Yape debe completarse con Culqi"
+      error: "El pago con tarjeta o Yape debe completarse con Mercado Pago"
     });
   }
   const updated = await call(repo.markPackagePagado, req.params.id, "efectivo");
@@ -669,7 +673,7 @@ app.patch("/api/packages/:id/registrar-pago-destino", async (req, res) => {
   const { metodoPago } = req.body || {};
   if (metodoPago === "tarjeta" || metodoPago === "yape") {
     return res.status(400).json({
-      error: "El pago con tarjeta o Yape debe completarse con Culqi"
+      error: "El pago con tarjeta o Yape debe completarse con Mercado Pago"
     });
   }
   const updated = await call(repo.markPackagePagado, req.params.id, "efectivo");
@@ -711,107 +715,118 @@ const denyIfNotPayable = (req, pkg) => {
   return { status: 403, error: "No autorizado" };
 };
 
+const applyApprovedMpPayment = async (payment) => {
+  if (!payment || payment.status !== "approved") {
+    return { ok: false, status: payment?.status || "unknown" };
+  }
+  const parsed = parseExternalReference(payment.external_reference);
+  if (!parsed) return { ok: false, status: "sin_referencia" };
+  const pkg = await call(repo.getPackageById, parsed.packageId);
+  if (!pkg) return { ok: false, status: "paquete_no_encontrado" };
+  if (pkg.pagado) return { ok: true, already: true, pkg };
+  const updated = await call(repo.markPackagePagado, parsed.packageId, parsed.metodoPago);
+  logActivity(
+    "mercadopago",
+    "Mercado Pago",
+    "payment",
+    "paquete",
+    `Pago MP: ${updated.codigoSeguimiento} — ${parsed.metodoPago} — S/${updated.precioEnvio || 0} — ${payment.id}`
+  );
+  return { ok: true, pkg: updated, paymentId: payment.id };
+};
+
 /**
- * POST /api/packages/:id/pagos/preparar — Crea orden Culqi (necesaria para Yape)
- * y devuelve la llave pública + monto en céntimos para abrir el Checkout.
+ * POST /api/packages/:id/pagos/preparar — Crea una preferencia de Checkout Pro
+ * y devuelve la URL de Mercado Pago (tarjeta o Yape).
  */
 app.post("/api/packages/:id/pagos/preparar", async (req, res) => {
-  const culqi = getCulqiConfig();
-  if (!culqi.enabled) {
+  const mp = getMpConfig();
+  if (!mp.enabled) {
     return res.status(503).json({
-      error: "Pagos con tarjeta y Yape no configurados. Agrega CULQI_PUBLIC_KEY y CULQI_SECRET_KEY."
+      error: "Pagos con tarjeta y Yape no configurados. Agrega MP_ACCESS_TOKEN."
     });
   }
   const pkg = await call(repo.getPackageById, req.params.id);
   const denied = denyIfNotPayable(req, pkg);
   if (denied) return res.status(denied.status).json({ error: denied.error });
-
-  const metodoPago = req.body?.metodoPago === "yape" ? "yape" : "tarjeta";
-  const amount = amountToCents(pkg.precioEnvio);
-  if (amount < 100) {
+  if (!pkg.precioEnvio || Number(pkg.precioEnvio) < 1) {
     return res.status(400).json({ error: "El monto mínimo de pago es S/ 1.00" });
   }
-
-  let orderId = null;
-  if (metodoPago === "yape") {
-    try {
-      const order = await createCulqiOrder({
-        amount,
-        description: `Envío ${pkg.codigoSeguimiento}`,
-        orderNumber: `TC-${pkg.id}-${Date.now()}`,
-        client: req.authUser
-      });
-      orderId = order.id;
-    } catch (err) {
-      return res.status(400).json({ error: err.message || "No se pudo crear la orden de Yape" });
-    }
+  const metodoPago = req.body?.metodoPago === "yape" ? "yape" : "tarjeta";
+  try {
+    const pref = await createMpPreference({
+      pkg,
+      metodoPago,
+      payerEmail: req.authUser?.email,
+      frontendUrl: FRONTEND_PUBLIC_URL,
+      backendUrl: BACKEND_PUBLIC_URL
+    });
+    res.json({
+      checkoutUrl: pref.checkoutUrl,
+      preferenceId: pref.preferenceId,
+      testMode: pref.testMode,
+      codigoSeguimiento: pkg.codigoSeguimiento,
+      metodoPago
+    });
+  } catch (err) {
+    res.status(err.status || 400).json({ error: err.message || "No se pudo crear el pago" });
   }
-
-  res.json({
-    publicKey: culqi.publicKey,
-    testMode: culqi.testMode,
-    amount,
-    currency: "PEN",
-    orderId,
-    email: req.authUser?.email || "",
-    codigoSeguimiento: pkg.codigoSeguimiento,
-    metodoPago
-  });
 });
 
 /**
- * POST /api/packages/:id/pagos/confirmar — Crea el cargo en Culqi con el token
- * y recién entonces marca el paquete como pagado.
+ * POST /api/packages/:id/pagos/verificar — Comprueba en Mercado Pago si el
+ * cobro fue aprobado y recién entonces marca el paquete como pagado.
  */
-app.post("/api/packages/:id/pagos/confirmar", async (req, res) => {
-  const culqi = getCulqiConfig();
-  if (!culqi.enabled) {
-    return res.status(503).json({
-      error: "Pagos con tarjeta y Yape no configurados."
-    });
+app.post("/api/packages/:id/pagos/verificar", async (req, res) => {
+  const mp = getMpConfig();
+  if (!mp.enabled) {
+    return res.status(503).json({ error: "Mercado Pago no configurado." });
   }
   const pkg = await call(repo.getPackageById, req.params.id);
+  if (!pkg) return res.status(404).json({ error: "Paquete no encontrado" });
+  if (pkg.pagado) return res.json(pkg);
   const denied = denyIfNotPayable(req, pkg);
   if (denied) return res.status(denied.status).json({ error: denied.error });
-
-  const { tokenId, email, metodoPago } = req.body || {};
-  if (!tokenId) {
-    return res.status(400).json({ error: "Falta el token de Culqi" });
+  const paymentId = req.body?.paymentId;
+  if (!paymentId) {
+    return res.status(400).json({ error: "Falta paymentId" });
   }
-  const method = metodoPago === "yape" ? "yape" : "tarjeta";
-  const amount = amountToCents(pkg.precioEnvio);
-  const chargeEmail = textValue(email) || req.authUser?.email || "pagos@tingocargo.com";
-
   try {
-    const charge = await createCulqiCharge({
-      amount,
-      email: chargeEmail,
-      sourceId: tokenId,
-      description: `Envío ${pkg.codigoSeguimiento}`,
-      metadata: {
-        paqueteId: String(pkg.id),
-        codigo: pkg.codigoSeguimiento,
-        metodo: method
-      }
-    });
-    if (charge.outcome && charge.outcome.type && charge.outcome.type !== "venta_exitosa") {
+    const payment = await getMpPayment(paymentId);
+    const applied = await applyApprovedMpPayment(payment);
+    if (!applied.ok) {
       return res.status(402).json({
-        error: charge.outcome.user_message || "El pago no fue aprobado"
+        error:
+          applied.status === "pending"
+            ? "El pago está pendiente (típico de Yape). Se confirmará cuando Mercado Pago lo apruebe."
+            : `El pago no fue aprobado (${applied.status}).`
       });
     }
-    const updated = await call(repo.markPackagePagado, req.params.id, method);
-    logActivity(
-      req.authUser.id,
-      req.authUser.nombre,
-      "payment",
-      "paquete",
-      `Pago Culqi: ${updated.codigoSeguimiento} — ${method} — S/${updated.precioEnvio || 0} — ${charge.id || ""}`
-    );
-    return res.json({ ...updated, culqiChargeId: charge.id || null });
+    const updated = await call(repo.getPackageById, req.params.id);
+    res.json(updated);
   } catch (err) {
-    return res.status(err.status || 400).json({ error: err.message || "No se pudo cobrar" });
+    res.status(err.status || 400).json({ error: err.message || "No se pudo verificar el pago" });
   }
 });
+
+const handleMpWebhook = async (req, res) => {
+  const type = req.body?.type || req.query.type || req.query.topic;
+  const paymentId = req.body?.data?.id || req.query["data.id"] || req.query.id;
+  if (type !== "payment" || !paymentId) {
+    return res.status(200).json({ ok: true });
+  }
+  try {
+    const payment = await getMpPayment(paymentId);
+    await applyApprovedMpPayment(payment);
+  } catch (err) {
+    console.error("Webhook Mercado Pago:", err.message);
+  }
+  res.status(200).json({ ok: true });
+};
+
+/** Webhook de Mercado Pago — confirma el pago sin depender del retorno del usuario */
+app.get("/api/pagos/mercadopago/webhook", handleMpWebhook);
+app.post("/api/pagos/mercadopago/webhook", handleMpWebhook);
 
 /* ── Rutas de catálogos (clientes, roles, sucursales, distribuidoras) ── */
 

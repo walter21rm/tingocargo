@@ -45,6 +45,7 @@ import ClientPackageNew from "./pages/ClientPackageNew.jsx";
 import ClientPackages from "./pages/ClientPackages.jsx";
 import ClientPackageDetail from "./pages/ClientPackageDetail.jsx";
 import ClientTracking from "./pages/ClientTracking.jsx";
+import PaymentResult from "./pages/PaymentResult.jsx";
 import { useEffect } from "react";
 import { getToken, getUser, getPublicConfig } from "./services/api.js";
 import { loadCountriesFromConfig } from "./utils/phone.js";
@@ -99,6 +100,7 @@ const App = () => {
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/seguimiento" element={<Tracking />} />
+          <Route path="/pagos/resultado" element={<PaymentResult />} />
           <Route path="/cliente/registro" element={<ClientRegister />} />
           <Route path="/cliente/login" element={<ClientLogin />} />
           <Route
