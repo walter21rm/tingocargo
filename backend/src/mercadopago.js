@@ -58,21 +58,24 @@ export const createMpPreference = async ({
   const method = metodoPago === "yape" ? "yape" : "tarjeta";
   const backBase = frontendUrl.replace(/\/$/, "");
   const successPath = `/pagos/resultado?paqueteId=${pkg.id}`;
-  const excluded =
+  const paymentMethods =
     method === "yape"
-      ? [
-          { id: "credit_card" },
-          { id: "debit_card" },
-          { id: "ticket" },
-          { id: "atm" },
-          { id: "bank_transfer" }
-        ]
-      : [
-          { id: "ticket" },
-          { id: "atm" },
-          { id: "bank_transfer" },
-          { id: "digital_currency" }
-        ];
+      ? {
+          excluded_payment_types: [
+            { id: "credit_card" },
+            { id: "prepaid_card" },
+            { id: "ticket" },
+            { id: "atm" }
+          ],
+          excluded_payment_methods: [{ id: "debvisa" }, { id: "debmaster" }],
+          default_payment_method_id: "yape",
+          installments: 1
+        }
+      : {
+          excluded_payment_methods: [{ id: "yape" }],
+          excluded_payment_types: [{ id: "ticket" }, { id: "atm" }],
+          installments: 1
+        };
 
   const payload = {
     items: [
@@ -93,10 +96,7 @@ export const createMpPreference = async ({
       codigo: pkg.codigoSeguimiento,
       metodo: method
     },
-    payment_methods: {
-      excluded_payment_types: excluded,
-      installments: 1
-    },
+    payment_methods: paymentMethods,
     statement_descriptor: "TINGOCARGO"
   };
 
