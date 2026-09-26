@@ -16,10 +16,10 @@ import {
   updatePackageRepartidor,
   listOperators,
   listCouriers,
-  registrarPagoDestino
+  registrarPagoDestino,
+  prepareMpPayment
 } from "../services/api.js";
 import ConfirmModal from "../components/ConfirmModal.jsx";
-import MpCheckoutForm from "../components/MpCheckoutForm.jsx";
 
 const normalizeDate = (value) => {
   if (!value) return null;
@@ -309,6 +309,12 @@ const AdminPackageDetail = () => {
     setError("");
     setNotice("");
     try {
+      if (pagoMetodo === "tarjeta" || pagoMetodo === "yape") {
+        const prep = await prepareMpPayment(pkg.id, pagoMetodo);
+        if (!prep.checkoutUrl) throw new Error("Mercado Pago no devolvió el enlace de pago");
+        window.location.href = prep.checkoutUrl;
+        return;
+      }
       await registrarPagoDestino(pkg.id, "efectivo");
       setNotice("Pago registrado (efectivo).");
       setPagoModalOpen(false);
@@ -1150,19 +1156,16 @@ const AdminPackageDetail = () => {
                   ))}
                 </div>
               ) : pagoMetodo === "tarjeta" || pagoMetodo === "yape" ? (
-                <MpCheckoutForm
-                  key={pagoMetodo}
-                  method={pagoMetodo}
-                  packageId={pkg.id}
-                  amount={pkg?.precioEnvio || 0}
-                  email={user?.email || ""}
-                  onSuccess={async () => {
-                    setNotice("Pago registrado.");
-                    setPagoModalOpen(false);
-                    setPagoMetodo(null);
-                    await loadPackage();
-                  }}
-                />
+                <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700">
+                  <p>
+                    Se abrirá la ventana de prueba de Mercado Pago para cobrar{" "}
+                    <strong>{pkg?.precioEnvio || 0} soles</strong> con{" "}
+                    {pagoMetodo === "yape" ? "Yape" : "tarjeta"}.
+                  </p>
+                  <p className="mt-2 text-xs text-slate-500">
+                    Ahí elige {pagoMetodo === "yape" ? "Yape" : "Tarjeta"}. No cobra dinero real.
+                  </p>
+                </div>
               ) : pagoMetodo === "efectivo" ? (
                 <div className="space-y-4">
                   <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
@@ -1185,14 +1188,18 @@ const AdminPackageDetail = () => {
               >
                 {pagoMetodo ? "Volver" : "Cancelar"}
               </button>
-              {pagoMetodo === "efectivo" && (
+              {pagoMetodo && (
                 <button
                   type="button"
                   onClick={handleConfirmarPago}
                   disabled={pagoLoading}
                   className="flex-1 rounded-xl bg-brand-600 px-5 py-2.5 text-sm font-semibold text-white disabled:opacity-60"
                 >
-                  {pagoLoading ? "Procesando..." : "Confirmar pago"}
+                  {pagoLoading
+                    ? "Procesando..."
+                    : pagoMetodo === "efectivo"
+                      ? "Confirmar pago"
+                      : "Continuar"}
                 </button>
               )}
             </div>
