@@ -141,6 +141,12 @@ export const prepareMpPayment = (id, metodoPago) =>
     body: JSON.stringify({ metodoPago })
   });
 
+export const processMpPayment = (id, payload) =>
+  apiFetch(`/api/packages/${id}/pagos/procesar`, {
+    method: "POST",
+    body: JSON.stringify(payload)
+  });
+
 export const verifyMpPayment = (id, paymentId) =>
   apiFetch(`/api/packages/${id}/pagos/verificar`, {
     method: "POST",

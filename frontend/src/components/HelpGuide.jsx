@@ -46,8 +46,9 @@ const guides = [
     steps: [
       "Abre el detalle del paquete",
       "El botón 'Registrar pago' aparece cuando hay precio asignado",
-      "Elige tarjeta o Yape para pagar en Mercado Pago, o efectivo si se cobra en mano",
-      "En tarjeta/Yape te redirige a Mercado Pago; el paquete se marca pagado solo si el cobro se aprueba",
+      "Elige tarjeta, Yape o efectivo",
+      "Tarjeta abre el formulario de la tarjeta; Yape pide celular y código de aprobación",
+      "El paquete se marca pagado solo si el cobro se aprueba",
       "Una vez pagado, podrás emitir la boleta"
     ]
   },

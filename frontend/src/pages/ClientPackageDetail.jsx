@@ -5,8 +5,9 @@
  */
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { getPackageById, payClientPackage, getUser, prepareMpPayment } from "../services/api.js";
+import { getPackageById, payClientPackage, getUser } from "../services/api.js";
 import Timeline from "../components/Timeline.jsx";
+import MpCheckoutForm from "../components/MpCheckoutForm.jsx";
 
 const METODOS_PAGO = [
   { id: "tarjeta", label: "Tarjeta de crédito/débito", icon: "💳" },
@@ -101,24 +102,11 @@ const ClientPackageDetail = () => {
     setSelectedMethod(null);
   };
 
-  const handleSimulatePayment = async () => {
-    if (selectedMethod === "tarjeta" || selectedMethod === "yape") {
-      setError("");
-      setPayLoading(true);
-      try {
-        const prep = await prepareMpPayment(pkg.id, selectedMethod);
-        if (!prep.checkoutUrl) throw new Error("Mercado Pago no devolvió el enlace de pago");
-        window.location.href = prep.checkoutUrl;
-        return;
-      } catch (err) {
-        setError(err.message || "No se pudo completar el pago.");
-      } finally {
-        setPayLoading(false);
-      }
-      return;
-    }
-    setError("");
-    await confirmPayment();
+  const handleMpSuccess = async () => {
+    setNotice("Pago registrado correctamente.");
+    setPaymentModalOpen(false);
+    setSelectedMethod(null);
+    await load();
   };
 
   if (!pkg && !error) {
@@ -235,9 +223,15 @@ const ClientPackageDetail = () => {
 
       {paymentModalOpen && canPay() && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4">
-          <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white shadow-xl">
+          <div className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl border border-slate-200 bg-white shadow-xl">
             <div className="border-b border-slate-100 px-6 py-4">
-              <h3 className="text-lg font-bold text-slate-900">Elegir método de pago</h3>
+              <h3 className="text-lg font-bold text-slate-900">
+                {selectedMethod === "yape"
+                  ? "Pagar con Yape"
+                  : selectedMethod === "tarjeta"
+                    ? "Pagar con tarjeta"
+                    : "Elegir método de pago"}
+              </h3>
               <p className="mt-1 text-sm text-slate-500">
                 Monto a pagar: <strong>{pkg?.precioEnvio || 0} soles</strong>
               </p>
@@ -257,27 +251,15 @@ const ClientPackageDetail = () => {
                     </button>
                   ))}
                 </div>
-              ) : selectedMethod === "tarjeta" ? (
-                <div className="space-y-4">
-                  <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-center">
-                    <span className="text-3xl">💳</span>
-                    <p className="mt-2 text-sm text-slate-700">
-                      Te llevaremos a Mercado Pago para cobrar <strong>{pkg?.precioEnvio || 0} soles</strong> con tarjeta.
-                    </p>
-                    <p className="mt-2 text-xs text-slate-500">
-                      Prueba: Visa 4009 1753 3280 6176, CVV 123, 11/30, titular APRO.
-                    </p>
-                  </div>
-                </div>
-              ) : selectedMethod === "yape" ? (
-                <div className="space-y-4">
-                  <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-center">
-                    <span className="text-3xl">📱</span>
-                    <p className="mt-2 text-sm text-slate-700">
-                      Te llevaremos a Mercado Pago para pagar <strong>{pkg?.precioEnvio || 0} soles</strong> con Yape.
-                    </p>
-                  </div>
-                </div>
+              ) : selectedMethod === "tarjeta" || selectedMethod === "yape" ? (
+                <MpCheckoutForm
+                  key={selectedMethod}
+                  method={selectedMethod}
+                  packageId={pkg.id}
+                  amount={pkg?.precioEnvio || 0}
+                  email={user?.email || ""}
+                  onSuccess={handleMpSuccess}
+                />
               ) : selectedMethod === "efectivo" ? (
                 <div className="space-y-4">
                   <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
@@ -301,18 +283,16 @@ const ClientPackageDetail = () => {
               >
                 {selectedMethod ? "Volver" : "Cancelar"}
               </button>
-              <button
-                type="button"
-                onClick={handleSimulatePayment}
-                disabled={payLoading || !selectedMethod}
-                className="flex-1 rounded-xl bg-brand-600 px-5 py-2.5 text-sm font-semibold text-white disabled:opacity-60"
-              >
-                {payLoading
-                  ? "Procesando..."
-                  : selectedMethod === "tarjeta" || selectedMethod === "yape"
-                    ? "Pagar ahora"
-                    : "Confirmar pago"}
-              </button>
+              {selectedMethod === "efectivo" && (
+                <button
+                  type="button"
+                  onClick={confirmPayment}
+                  disabled={payLoading}
+                  className="flex-1 rounded-xl bg-brand-600 px-5 py-2.5 text-sm font-semibold text-white disabled:opacity-60"
+                >
+                  {payLoading ? "Procesando..." : "Confirmar pago"}
+                </button>
+              )}
             </div>
           </div>
         </div>

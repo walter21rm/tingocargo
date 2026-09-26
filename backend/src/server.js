@@ -26,9 +26,11 @@ import * as memory from "./storage.js";
 import * as db from "./storageDb.js";
 import {
   createMpPreference,
+  createMpCharge,
   getMpConfig,
   getMpPayment,
-  parseExternalReference
+  parseExternalReference,
+  paymentStatusMessage
 } from "./mercadopago.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -401,7 +403,8 @@ app.get("/api/config/public", (req, res) => {
     },
     pagos: {
       mercadopagoEnabled: getMpConfig().enabled,
-      testMode: getMpConfig().testMode
+      testMode: getMpConfig().testMode,
+      publicKey: getMpConfig().publicKey
     }
   });
 });
@@ -770,6 +773,60 @@ app.post("/api/packages/:id/pagos/preparar", async (req, res) => {
     });
   } catch (err) {
     res.status(err.status || 400).json({ error: err.message || "No se pudo crear el pago" });
+  }
+});
+
+/**
+ * POST /api/packages/:id/pagos/procesar — Cobra Yape o tarjeta con el token
+ * generado en el navegador. No recibe el número de tarjeta ni el código de Yape.
+ */
+app.post("/api/packages/:id/pagos/procesar", async (req, res) => {
+  const mp = getMpConfig();
+  if (!mp.enabled) {
+    return res.status(503).json({
+      error: "Pagos con tarjeta y Yape no configurados. Agrega MP_ACCESS_TOKEN."
+    });
+  }
+  const pkg = await call(repo.getPackageById, req.params.id);
+  const denied = denyIfNotPayable(req, pkg);
+  if (denied) return res.status(denied.status).json({ error: denied.error });
+  const amount = Math.round(Number(pkg.precioEnvio) * 100) / 100;
+  if (!amount || amount < 1) {
+    return res.status(400).json({ error: "El monto mínimo de pago es S/ 1.00" });
+  }
+  const metodoPago = req.body?.metodoPago === "yape" ? "yape" : "tarjeta";
+  const token = String(req.body?.token || "").trim();
+  const paymentMethodId =
+    metodoPago === "yape" ? "yape" : String(req.body?.paymentMethodId || "").trim();
+  if (!token || token.length < 8) {
+    return res.status(400).json({ error: "No se pudo preparar el cobro. Vuelve a intentar." });
+  }
+  if (!paymentMethodId || (metodoPago === "tarjeta" && paymentMethodId === "yape")) {
+    return res.status(400).json({ error: "Medio de pago no válido." });
+  }
+  const email = String(req.body?.email || req.authUser?.email || "").trim();
+  try {
+    const payment = await createMpCharge({
+      token,
+      amount,
+      description: `Envío ${pkg.codigoSeguimiento}`,
+      paymentMethodId,
+      installments: req.body?.installments,
+      issuerId: req.body?.issuerId,
+      email,
+      identificationType: req.body?.identificationType,
+      identificationNumber: req.body?.identificationNumber,
+      externalReference: `pkg:${pkg.id}:${metodoPago}`,
+      backendUrl: BACKEND_PUBLIC_URL
+    });
+    if (payment.status !== "approved") {
+      return res.status(402).json({ error: paymentStatusMessage(payment) });
+    }
+    await applyApprovedMpPayment(payment);
+    const updated = await call(repo.getPackageById, req.params.id);
+    res.json(updated);
+  } catch (err) {
+    res.status(err.status || 400).json({ error: err.message || "No se pudo completar el pago" });
   }
 });
 

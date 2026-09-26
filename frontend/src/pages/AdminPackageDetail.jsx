@@ -16,10 +16,10 @@ import {
   updatePackageRepartidor,
   listOperators,
   listCouriers,
-  registrarPagoDestino,
-  prepareMpPayment
+  registrarPagoDestino
 } from "../services/api.js";
 import ConfirmModal from "../components/ConfirmModal.jsx";
+import MpCheckoutForm from "../components/MpCheckoutForm.jsx";
 
 const normalizeDate = (value) => {
   if (!value) return null;
@@ -309,15 +309,8 @@ const AdminPackageDetail = () => {
     setError("");
     setNotice("");
     try {
-      if (pagoMetodo === "tarjeta" || pagoMetodo === "yape") {
-        const prep = await prepareMpPayment(pkg.id, pagoMetodo);
-        if (!prep.checkoutUrl) throw new Error("Mercado Pago no devolvió el enlace de pago");
-        window.location.href = prep.checkoutUrl;
-        return;
-      } else {
-        await registrarPagoDestino(pkg.id, "efectivo");
-        setNotice("Pago registrado (efectivo).");
-      }
+      await registrarPagoDestino(pkg.id, "efectivo");
+      setNotice("Pago registrado (efectivo).");
       setPagoModalOpen(false);
       setPagoMetodo(null);
       await loadPackage();
@@ -1125,9 +1118,15 @@ const AdminPackageDetail = () => {
 
       {pagoModalOpen && canRegistrarPago && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4">
-          <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white shadow-xl">
+          <div className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl border border-slate-200 bg-white shadow-xl">
             <div className="border-b border-slate-100 px-6 py-4">
-              <h3 className="text-lg font-bold text-slate-900">Registrar pago</h3>
+              <h3 className="text-lg font-bold text-slate-900">
+                {pagoMetodo === "yape"
+                  ? "Pagar con Yape"
+                  : pagoMetodo === "tarjeta"
+                    ? "Pagar con tarjeta"
+                    : "Registrar pago"}
+              </h3>
               <p className="mt-1 text-sm text-slate-500">
                 Monto: <strong>{pkg?.precioEnvio || 0} soles</strong>
                 {pkg?.quienPaga && (
@@ -1150,27 +1149,20 @@ const AdminPackageDetail = () => {
                     </button>
                   ))}
                 </div>
-              ) : pagoMetodo === "tarjeta" ? (
-                <div className="space-y-4">
-                  <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-center">
-                    <span className="text-3xl">💳</span>
-                    <p className="mt-2 text-sm text-slate-700">
-                      Te llevaremos a Mercado Pago para cobrar <strong>{pkg?.precioEnvio || 0} soles</strong> con tarjeta.
-                    </p>
-                    <p className="mt-2 text-xs text-slate-500">
-                      Prueba: Visa 4009 1753 3280 6176, CVV 123, 11/30, titular APRO.
-                    </p>
-                  </div>
-                </div>
-              ) : pagoMetodo === "yape" ? (
-                <div className="space-y-4">
-                  <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-center">
-                    <span className="text-3xl">📱</span>
-                    <p className="mt-2 text-sm text-slate-700">
-                      Te llevaremos a Mercado Pago para pagar <strong>{pkg?.precioEnvio || 0} soles</strong> con Yape.
-                    </p>
-                  </div>
-                </div>
+              ) : pagoMetodo === "tarjeta" || pagoMetodo === "yape" ? (
+                <MpCheckoutForm
+                  key={pagoMetodo}
+                  method={pagoMetodo}
+                  packageId={pkg.id}
+                  amount={pkg?.precioEnvio || 0}
+                  email={user?.email || ""}
+                  onSuccess={async () => {
+                    setNotice("Pago registrado.");
+                    setPagoModalOpen(false);
+                    setPagoMetodo(null);
+                    await loadPackage();
+                  }}
+                />
               ) : pagoMetodo === "efectivo" ? (
                 <div className="space-y-4">
                   <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
@@ -1193,18 +1185,14 @@ const AdminPackageDetail = () => {
               >
                 {pagoMetodo ? "Volver" : "Cancelar"}
               </button>
-              {pagoMetodo && (
+              {pagoMetodo === "efectivo" && (
                 <button
                   type="button"
                   onClick={handleConfirmarPago}
                   disabled={pagoLoading}
                   className="flex-1 rounded-xl bg-brand-600 px-5 py-2.5 text-sm font-semibold text-white disabled:opacity-60"
                 >
-                  {pagoLoading
-                    ? "Procesando..."
-                    : pagoMetodo === "efectivo"
-                      ? "Confirmar pago"
-                      : "Pagar ahora"}
+                  {pagoLoading ? "Procesando..." : "Confirmar pago"}
                 </button>
               )}
             </div>
