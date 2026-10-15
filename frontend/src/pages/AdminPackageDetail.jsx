@@ -921,7 +921,7 @@ const AdminPackageDetail = () => {
                   </svg>
                   {actionLoading ? "Procesando..." : "Confirmar Entrega"}
                 </button>
-              )}}
+              )}
               {pkg.estadoActual === "En Tránsito" && canMarkFailed && (
                 <button
                   type="button"
