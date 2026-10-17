@@ -5,6 +5,23 @@
  */
 import { useState } from "react";
 
+const HelpIcon = ({ className = "h-7 w-7" }) => (
+  <svg
+    viewBox="0 0 24 24"
+    className={className}
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+  >
+    <circle cx="12" cy="12" r="10" />
+    <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
+    <circle cx="12" cy="17" r="0.85" fill="currentColor" stroke="none" />
+  </svg>
+);
+
 const guides = [
   {
     title: "Crear un paquete",
@@ -85,11 +102,7 @@ const HelpGuide = () => {
         className="fixed bottom-6 right-6 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-brand-600 text-white shadow-lg transition-all hover:bg-brand-700 hover:shadow-xl hover:scale-105"
         title="Ayuda"
       >
-        <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth="2">
-          <circle cx="12" cy="12" r="10" />
-          <path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3" />
-          <path d="M12 17h.01" />
-        </svg>
+        <HelpIcon />
       </button>
 
       {open && (
@@ -97,11 +110,7 @@ const HelpGuide = () => {
           <div className="bg-brand-600 px-5 py-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2 text-white">
-                <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2">
-                  <circle cx="12" cy="12" r="10" />
-                  <path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3" />
-                  <path d="M12 17h.01" />
-                </svg>
+                <HelpIcon className="h-5 w-5" />
                 <h3 className="text-base font-bold">Guía de Ayuda</h3>
               </div>
               <button type="button" onClick={() => setOpen(false)} className="text-white/60 hover:text-white">
