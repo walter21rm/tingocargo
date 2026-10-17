@@ -73,6 +73,22 @@ const guides = [
   }
 ];
 
+const HelpIcon = ({ className = "h-8 w-8" }) => (
+  <svg
+    viewBox="0 0 24 24"
+    className={className}
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2.4"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+  >
+    <path d="M8.6 9.2c.15-2.6 2.1-4.2 4.4-4.2 2.4 0 4 1.55 4 3.55 0 2.15-2 2.95-3.3 3.75-.75.45-1.2 1.05-1.2 1.85v.55" />
+    <circle cx="12.5" cy="18.85" r="1.45" fill="currentColor" stroke="none" />
+  </svg>
+);
+
 const HelpGuide = () => {
   const [open, setOpen] = useState(false);
   const [expandedIndex, setExpandedIndex] = useState(null);
@@ -84,12 +100,9 @@ const HelpGuide = () => {
         onClick={() => setOpen(!open)}
         className="fixed bottom-6 right-6 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-brand-600 text-white shadow-lg transition-all hover:bg-brand-700 hover:shadow-xl hover:scale-105"
         title="Ayuda"
+        aria-label="Ayuda"
       >
-        <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth="2">
-          <circle cx="12" cy="12" r="10" />
-          <path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3" />
-          <path d="M12 17h.01" />
-        </svg>
+        <HelpIcon className="h-8 w-8" />
       </button>
 
       {open && (
@@ -97,11 +110,7 @@ const HelpGuide = () => {
           <div className="bg-brand-600 px-5 py-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2 text-white">
-                <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2">
-                  <circle cx="12" cy="12" r="10" />
-                  <path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3" />
-                  <path d="M12 17h.01" />
-                </svg>
+                <HelpIcon className="h-5 w-5" />
                 <h3 className="text-base font-bold">Guía de Ayuda</h3>
               </div>
               <button type="button" onClick={() => setOpen(false)} className="text-white/60 hover:text-white">
