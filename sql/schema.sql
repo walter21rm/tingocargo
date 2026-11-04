@@ -8,17 +8,17 @@ CREATE TABLE roles (
 CREATE TABLE sucursales (
   id SERIAL PRIMARY KEY,
   nombre VARCHAR(100) NOT NULL,
-  direccion VARCHAR(200) NOT NULL
+  direccion TEXT NOT NULL
 );
 
 CREATE TABLE clientes (
   id SERIAL PRIMARY KEY,
   tipo VARCHAR(20) NOT NULL CHECK (tipo IN ('persona', 'empresa')),
   nombre VARCHAR(120) NOT NULL,
-  documento VARCHAR(30),
-  telefono VARCHAR(30),
+  documento TEXT,
+  telefono TEXT,
   email VARCHAR(120),
-  direccion VARCHAR(200),
+  direccion TEXT,
   creado_en TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
@@ -26,7 +26,7 @@ CREATE TABLE usuarios (
   id SERIAL PRIMARY KEY,
   nombre VARCHAR(100) NOT NULL,
   email VARCHAR(120) NOT NULL UNIQUE,
-  telefono VARCHAR(30),
+  telefono TEXT,
   rol_id INT NOT NULL REFERENCES roles(id),
   sucursal_id INT REFERENCES sucursales(id),
   cliente_id INT REFERENCES clientes(id),
@@ -41,8 +41,8 @@ CREATE TABLE distribuidoras (
   id SERIAL PRIMARY KEY,
   nombre VARCHAR(120) NOT NULL,
   razon_social VARCHAR(200),
-  telefono VARCHAR(30),
-  direccion VARCHAR(200),
+  telefono TEXT,
+  direccion TEXT,
   creado_en TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
@@ -57,13 +57,13 @@ CREATE TABLE paquetes (
   repartidor_id INT REFERENCES usuarios(id),
   sucursal_origen_id INT NOT NULL REFERENCES sucursales(id),
   sucursal_destino_id INT REFERENCES sucursales(id),
-  destino_texto VARCHAR(200) NOT NULL,
+  destino_texto TEXT NOT NULL,
   descripcion VARCHAR(200),
   estado_actual VARCHAR(30) NOT NULL CHECK (estado_actual IN ('En Almacén', 'En Tránsito', 'Entregado', 'Intento fallido')),
   reprogramacion_fecha DATE,
   reprogramacion_hora_inicio VARCHAR(5),
   reprogramacion_hora_fin VARCHAR(5),
-  reprogramacion_direccion VARCHAR(200),
+  reprogramacion_direccion TEXT,
   peso_kg DECIMAL(10,2) DEFAULT 0,
   precio_envio DECIMAL(10,2) DEFAULT 10,
   quien_paga VARCHAR(20) DEFAULT 'remitente' CHECK (quien_paga IN ('remitente', 'destinatario')),
@@ -77,7 +77,7 @@ CREATE TABLE historial_estados (
   paquete_id INT NOT NULL REFERENCES paquetes(id),
   estado VARCHAR(30) NOT NULL CHECK (estado IN ('En Almacén', 'En Tránsito', 'Entregado', 'Intento fallido')),
   fecha_hora TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  observacion VARCHAR(200),
+  observacion TEXT,
   usuario_ref VARCHAR(80),
   usuario_nombre VARCHAR(120)
 );

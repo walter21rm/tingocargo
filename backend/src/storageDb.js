@@ -961,6 +961,20 @@ const encryptStoredColumn = async (table, column) => {
 
 /** Ajusta el esquema existente: auditoría, usuario del historial, índices y cifrado. */
 export const ensureComplianceSchema = async () => {
+  for (const statement of [
+    "ALTER TABLE clientes ALTER COLUMN documento TYPE TEXT",
+    "ALTER TABLE clientes ALTER COLUMN telefono TYPE TEXT",
+    "ALTER TABLE clientes ALTER COLUMN direccion TYPE TEXT",
+    "ALTER TABLE usuarios ALTER COLUMN telefono TYPE TEXT",
+    "ALTER TABLE distribuidoras ALTER COLUMN telefono TYPE TEXT",
+    "ALTER TABLE distribuidoras ALTER COLUMN direccion TYPE TEXT",
+    "ALTER TABLE sucursales ALTER COLUMN direccion TYPE TEXT",
+    "ALTER TABLE paquetes ALTER COLUMN destino_texto TYPE TEXT",
+    "ALTER TABLE paquetes ALTER COLUMN reprogramacion_direccion TYPE TEXT",
+    "ALTER TABLE historial_estados ALTER COLUMN observacion TYPE TEXT"
+  ]) {
+    await query(statement);
+  }
   await query(`ALTER TABLE historial_estados ADD COLUMN IF NOT EXISTS usuario_ref VARCHAR(80)`);
   await query(`ALTER TABLE historial_estados ADD COLUMN IF NOT EXISTS usuario_nombre VARCHAR(120)`);
   await query(`
