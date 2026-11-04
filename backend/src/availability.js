@@ -36,8 +36,13 @@ const limaParts = (date) => {
   };
 };
 
+let lastRecord = 0;
+
 export const recordAvailability = (ok = true) => {
-  const line = JSON.stringify({ ts: Date.now(), ok: Boolean(ok) }) + "\n";
+  const now = Date.now();
+  if (now - lastRecord < 60 * 1000) return;
+  lastRecord = now;
+  const line = JSON.stringify({ ts: now, ok: Boolean(ok) }) + "\n";
   fs.mkdirSync(path.dirname(filePath), { recursive: true });
   fs.appendFileSync(filePath, line);
 };

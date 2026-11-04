@@ -33,6 +33,7 @@ import {
   paymentStatusMessage
 } from "./mercadopago.js";
 import { availabilityReport, recordAvailability } from "./availability.js";
+import { runBackup } from "./backup.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 dotenv.config({ path: path.resolve(__dirname, "../.env") });
@@ -424,6 +425,7 @@ const ensureAdminUser = async () => {
 
 /** GET /api/health — Verifica que el servidor esté activo */
 app.get("/api/health", async (req, res) => {
+  recordAvailability(true);
   const body = await call(repo.getHealth);
   res.json({ ...body, disponibilidad: availabilityReport() });
 });
@@ -1782,8 +1784,33 @@ const startServer = async () => {
     }
   }
   recordAvailability(true);
-  const beat = setInterval(() => recordAvailability(true), 10 * 60 * 1000);
+  const beat = setInterval(() => recordAvailability(true), 4 * 60 * 1000);
   beat.unref?.();
+  let lastBackupDay = "";
+  const backupBeat = setInterval(async () => {
+    if (!useDb || !process.env.DATABASE_URL) return;
+    const hour = new Intl.DateTimeFormat("en-US", {
+      timeZone: ZONA_HORARIA,
+      hour: "2-digit",
+      hourCycle: "h23"
+    }).format(new Date());
+    const day = new Intl.DateTimeFormat("en-CA", {
+      timeZone: ZONA_HORARIA,
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit"
+    }).format(new Date());
+    if (hour !== "03" || lastBackupDay === day) return;
+    lastBackupDay = day;
+    try {
+      const result = await runBackup(process.env.DATABASE_URL);
+      console.log("Respaldo diario escrito", result.file);
+    } catch (err) {
+      console.error("No se pudo crear el respaldo diario:", err.message);
+      lastBackupDay = "";
+    }
+  }, 60 * 60 * 1000);
+  backupBeat.unref?.();
   app.listen(port, () => {
     console.log(`API logística en http://localhost:${port}`);
     ensureAdminUser();
