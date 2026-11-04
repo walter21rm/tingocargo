@@ -2,7 +2,10 @@
   "configuracion": {
     "servidor": {
       "puerto": 4000,
-      "zonaHoraria": "America/Lima"
+      "zonaHoraria": "America/Lima",
+      "disponibilidadObjetivo": 99,
+      "horarioInicio": 8,
+      "horarioFin": 20
     },
     "baseDatos": {
       "usar": true,
@@ -19,6 +22,7 @@
       "seedNombre": "Walter",
       "seedEmail": "wruizmarin21@gmail.com",
       "seedPassword": "wally21",
+      "inactividadMinutos": 30,
       "tokenKey": "adminToken",
       "userKey": "adminUser"
     }

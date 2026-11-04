@@ -25,12 +25,14 @@ const ClientPackageNew = () => {
   const [form, setForm] = useState({
     destinatarioId: "",
     sucursalOrigenId: "",
+    sucursalDestinoId: "",
     destinoTexto: "",
     descripcion: "",
     pesoKg: "",
     quienPaga: "remitente"
   });
   const [error, setError] = useState("");
+  const [fieldErrors, setFieldErrors] = useState({});
   const [loading, setLoading] = useState(false);
   const [showNewClient, setShowNewClient] = useState(false);
   const [newClient, setNewClient] = useState({
@@ -106,8 +108,19 @@ const ClientPackageNew = () => {
     };
   }, [showNewClient, newClient.documento, newClient.tipoDocumento]);
 
+  const liveError = (name, value) => {
+    if (name === "destinatarioId" && !value) return "Selecciona un destinatario.";
+    if (name === "sucursalOrigenId" && !value) return "Selecciona la sucursal de origen.";
+    if (name === "sucursalDestinoId" && !value) return "Selecciona la sucursal de destino.";
+    if (name === "destinoTexto" && !String(value).trim()) return "Ingresa la dirección de entrega.";
+    if (name === "descripcion" && !String(value).trim()) return "Describe el contenido.";
+    if (name === "pesoKg" && !(parseFloat(value) > 0)) return "El peso debe ser mayor a 0.";
+    return "";
+  };
+
   const handleChange = (e) => {
     const { name, value } = e.target;
+    setFieldErrors((prev) => ({ ...prev, [name]: liveError(name, value) }));
     setForm((prev) => ({ ...prev, [name]: value }));
     if (name === "destinatarioId" && value) {
       const client = clients.find((c) => String(c.id) === String(value));
@@ -183,14 +196,24 @@ const ClientPackageNew = () => {
     setLoading(true);
     try {
       const peso = parseFloat(form.pesoKg) || 0;
-      if (peso <= 0) {
-        setError("El peso debe ser mayor a 0");
+      const nextErrors = {
+        destinatarioId: liveError("destinatarioId", form.destinatarioId),
+        sucursalOrigenId: liveError("sucursalOrigenId", form.sucursalOrigenId),
+        sucursalDestinoId: liveError("sucursalDestinoId", form.sucursalDestinoId),
+        destinoTexto: liveError("destinoTexto", form.destinoTexto),
+        descripcion: liveError("descripcion", form.descripcion),
+        pesoKg: liveError("pesoKg", form.pesoKg)
+      };
+      setFieldErrors(nextErrors);
+      if (Object.values(nextErrors).some(Boolean) || peso <= 0) {
+        setError("Revisa los campos marcados.");
         setLoading(false);
         return;
       }
       await createClientPackage({
         destinatarioId: form.destinatarioId,
         sucursalOrigenId: form.sucursalOrigenId,
+        sucursalDestinoId: form.sucursalDestinoId,
         destinoTexto: form.destinoTexto.trim(),
         descripcion: form.descripcion.trim(),
         pesoKg: peso,
@@ -257,6 +280,32 @@ const ClientPackageNew = () => {
               </option>
             ))}
           </select>
+          {fieldErrors.sucursalOrigenId && (
+            <span className="mt-1 block text-xs text-red-600">{fieldErrors.sucursalOrigenId}</span>
+          )}
+        </label>
+
+        <label className="block text-sm font-semibold text-slate-700">
+          Sucursal de destino *
+          <select
+            name="sucursalDestinoId"
+            value={form.sucursalDestinoId}
+            onChange={handleChange}
+            required
+            className={`mt-2 w-full rounded-xl border px-4 py-3 text-sm ${
+              fieldErrors.sucursalDestinoId ? "border-red-300" : "border-slate-200"
+            }`}
+          >
+            <option value="">Seleccionar sucursal</option>
+            {branches.map((b) => (
+              <option key={b.id} value={b.id}>
+                {b.nombre} - {b.direccion}
+              </option>
+            ))}
+          </select>
+          {fieldErrors.sucursalDestinoId && (
+            <span className="mt-1 block text-xs text-red-600">{fieldErrors.sucursalDestinoId}</span>
+          )}
         </label>
 
         <label className="block text-sm font-semibold text-slate-700">

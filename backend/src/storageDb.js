@@ -17,6 +17,7 @@ import pg from "pg";
 import path from "path";
 import { fileURLToPath } from "url";
 import { readFileSync } from "fs";
+import { decryptField, encryptField } from "./fieldCrypto.js";
 
 const { Pool } = pg;
 
@@ -81,13 +82,13 @@ const mapPackageRow = (row) => ({
   repartidorId: row.repartidor_id,
   sucursalOrigenId: row.sucursal_origen_id,
   sucursalDestinoId: row.sucursal_destino_id,
-  destinoTexto: row.destino_texto || "",
+  destinoTexto: decryptField(row.destino_texto) || "",
   descripcion: row.descripcion,
   estadoActual: row.estado_actual,
   reprogramacionFecha: row.reprogramacion_fecha,
   reprogramacionHoraInicio: row.reprogramacion_hora_inicio,
   reprogramacionHoraFin: row.reprogramacion_hora_fin,
-  reprogramacionDireccion: row.reprogramacion_direccion,
+  reprogramacionDireccion: decryptField(row.reprogramacion_direccion),
   pesoKg: parseFloat(row.peso_kg) || 0,
   precioEnvio: parseFloat(row.precio_envio) || 0,
   quienPaga: row.quien_paga || "remitente",
@@ -105,26 +106,26 @@ const mapPackageDetailsRow = (row) => ({
         id: row.remitente_ref_id,
         nombre: row.remitente_nombre,
         razonSocial: row.remitente_razon_social,
-        documento: row.remitente_documento,
-        telefono: row.remitente_telefono,
-        direccion: row.remitente_direccion
+        documento: decryptField(row.remitente_documento),
+        telefono: decryptField(row.remitente_telefono),
+        direccion: decryptField(row.remitente_direccion)
       }
     : null,
   destinatario: row.destinatario_id
     ? {
         id: row.destinatario_id,
         nombre: row.destinatario_nombre,
-        documento: row.destinatario_documento,
-        telefono: row.destinatario_telefono,
+        documento: decryptField(row.destinatario_documento),
+        telefono: decryptField(row.destinatario_telefono),
         email: row.destinatario_email,
-        direccion: row.destinatario_direccion
+        direccion: decryptField(row.destinatario_direccion)
       }
     : null,
   operador: row.operador_id
     ? {
         id: row.operador_id,
         nombre: row.operador_nombre,
-        telefono: row.operador_telefono,
+        telefono: decryptField(row.operador_telefono),
         email: row.operador_email
       }
     : null,
@@ -132,7 +133,7 @@ const mapPackageDetailsRow = (row) => ({
     ? {
         id: row.repartidor_id,
         nombre: row.repartidor_nombre,
-        telefono: row.repartidor_telefono,
+        telefono: decryptField(row.repartidor_telefono),
         email: row.repartidor_email
       }
     : null,
@@ -140,14 +141,14 @@ const mapPackageDetailsRow = (row) => ({
     ? {
         id: row.suc_origen_id,
         nombre: row.suc_origen_nombre,
-        direccion: row.suc_origen_direccion
+        direccion: decryptField(row.suc_origen_direccion)
       }
     : null,
   sucursalDestino: row.suc_destino_id
     ? {
         id: row.suc_destino_id,
         nombre: row.suc_destino_nombre,
-        direccion: row.suc_destino_direccion
+        direccion: decryptField(row.suc_destino_direccion)
       }
     : null
 });
@@ -178,10 +179,10 @@ export const listClients = async () => {
     id: row.id,
     tipo: row.tipo,
     nombre: row.nombre,
-    documento: row.documento,
-    telefono: row.telefono,
+    documento: decryptField(row.documento),
+    telefono: decryptField(row.telefono),
     email: row.email,
-    direccion: row.direccion,
+    direccion: decryptField(row.direccion),
     creadoEn: row.creado_en
   }));
 };
@@ -195,10 +196,10 @@ export const createClient = async (data) => {
     [
       data.tipo || "persona",
       data.nombre || "Cliente sin nombre",
-      data.documento || "",
-      data.telefono || "",
+      encryptField(data.documento || ""),
+      encryptField(data.telefono || ""),
       data.email || "",
-      data.direccion || ""
+      encryptField(data.direccion || "")
     ]
   );
   const row = rows[0];
@@ -206,10 +207,10 @@ export const createClient = async (data) => {
     id: row.id,
     tipo: row.tipo,
     nombre: row.nombre,
-    documento: row.documento,
-    telefono: row.telefono,
+    documento: decryptField(row.documento),
+    telefono: decryptField(row.telefono),
     email: row.email,
-    direccion: row.direccion,
+    direccion: decryptField(row.direccion),
     creadoEn: row.creado_en
   };
 };
@@ -226,19 +227,33 @@ export const updateClient = async (id, data) => {
      RETURNING *`,
     [
       data.nombre || null,
-      data.telefono || null,
+      data.telefono ? encryptField(data.telefono) : null,
       data.email || null,
-      data.direccion || null,
+      data.direccion ? encryptField(data.direccion) : null,
       id
     ]
   );
-  return rows[0] || null;
+  const row = rows[0];
+  if (!row) return null;
+  return {
+    ...row,
+    documento: decryptField(row.documento),
+    telefono: decryptField(row.telefono),
+    direccion: decryptField(row.direccion)
+  };
 };
 
 /** Busca un cliente por su ID */
 export const getClientById = async (id) => {
   const { rows } = await query("SELECT * FROM clientes WHERE id = $1", [id]);
-  return rows[0] || null;
+  const row = rows[0];
+  if (!row) return null;
+  return {
+    ...row,
+    documento: decryptField(row.documento),
+    telefono: decryptField(row.telefono),
+    direccion: decryptField(row.direccion)
+  };
 };
 
 /** Busca un cliente por su número de documento (solo dígitos, ignora guiones y letras) */
@@ -274,7 +289,7 @@ export const listBranches = async () => {
   return rows.map((row) => ({
     id: row.id,
     nombre: row.nombre,
-    direccion: row.direccion
+    direccion: decryptField(row.direccion)
   }));
 };
 
@@ -283,13 +298,13 @@ export const createBranch = async (data) => {
     `INSERT INTO sucursales (nombre, direccion)
      VALUES ($1, $2)
      RETURNING *`,
-    [data.nombre || "Sucursal", data.direccion || ""]
+    [data.nombre || "Sucursal", encryptField(data.direccion || "")]
   );
   const row = rows[0];
   return {
     id: row.id,
     nombre: row.nombre,
-    direccion: row.direccion
+    direccion: decryptField(row.direccion)
   };
 };
 
@@ -333,7 +348,7 @@ export const listUsers = async () => {
     id: row.id,
     nombre: row.nombre,
     email: row.email,
-    telefono: row.telefono,
+    telefono: decryptField(row.telefono),
     rolId: row.rol_id,
     sucursalId: row.sucursal_id,
     clienteId: row.cliente_id,
@@ -386,7 +401,7 @@ export const listOperators = async () => {
   return rows.map((row) => ({
     id: row.id,
     nombre: row.nombre,
-    telefono: row.telefono,
+    telefono: decryptField(row.telefono),
     email: row.email
   }));
 };
@@ -404,7 +419,7 @@ export const listCouriers = async () => {
   return rows.map((row) => ({
     id: row.id,
     nombre: row.nombre,
-    telefono: row.telefono,
+    telefono: decryptField(row.telefono),
     email: row.email,
     placa: row.placa || null,
     vehiculo: row.vehiculo || null
@@ -420,7 +435,7 @@ export const createUser = async (data) => {
     [
       data.nombre || "Usuario",
       data.email || "",
-      data.telefono || "",
+      encryptField(data.telefono || ""),
       data.rolId,
       data.sucursalId ?? null,
       data.clienteId ?? null,
@@ -435,7 +450,7 @@ export const createUser = async (data) => {
     id: row.id,
     nombre: row.nombre,
     email: row.email,
-    telefono: row.telefono,
+    telefono: decryptField(row.telefono),
     rolId: row.rol_id,
     sucursalId: row.sucursal_id,
     clienteId: row.cliente_id,
@@ -462,7 +477,7 @@ export const updateUser = async (id, data) => {
     [
       data.nombre || "Usuario",
       data.email || "",
-      data.telefono || "",
+      encryptField(data.telefono || ""),
       data.rolId,
       data.sucursalId,
       data.activo ?? true,
@@ -485,15 +500,21 @@ export const deleteUser = async (id) => {
 /* ── Paquetes ────────────────────────────────────────────── */
 
 /** Lista paquetes. Si se pasa status, filtra por estado. */
-export const listPackages = async (status) => {
-  if (!status) {
-    const { rows } = await query("SELECT * FROM paquetes ORDER BY id DESC");
-    return rows.map(mapPackageRow);
+export const listPackages = async (status, options = {}) => {
+  const params = [];
+  let sql = "SELECT * FROM paquetes";
+  if (status) {
+    params.push(status);
+    sql += ` WHERE estado_actual = $${params.length}`;
   }
-  const { rows } = await query(
-    "SELECT * FROM paquetes WHERE estado_actual = $1 ORDER BY id DESC",
-    [status]
-  );
+  sql += " ORDER BY id DESC";
+  const limit = Number(options.limit) || 0;
+  const offset = Number(options.offset) || 0;
+  if (limit > 0) {
+    params.push(limit, offset);
+    sql += ` LIMIT $${params.length - 1} OFFSET $${params.length}`;
+  }
+  const { rows } = await query(sql, params);
   return rows.map(mapPackageRow);
 };
 
@@ -680,7 +701,7 @@ export const getPackageDetailsById = async (id) => {
   if (!rows[0]) return null;
   const pkg = mapPackageDetailsRow(rows[0]);
   const history = await query(
-    "SELECT estado, fecha_hora, observacion FROM historial_estados WHERE paquete_id = $1 ORDER BY fecha_hora ASC",
+    "SELECT estado, fecha_hora, observacion, usuario_ref, usuario_nombre FROM historial_estados WHERE paquete_id = $1 ORDER BY fecha_hora ASC",
     [id]
   );
   return {
@@ -688,7 +709,9 @@ export const getPackageDetailsById = async (id) => {
     historial: history.rows.map((row) => ({
       estado: row.estado,
       fechaHora: toIsoUtc(row.fecha_hora),
-      observacion: row.observacion
+      observacion: decryptField(row.observacion),
+      usuarioId: row.usuario_ref || null,
+      usuarioNombre: row.usuario_nombre || null
     }))
   };
 };
@@ -735,7 +758,7 @@ export const createPackage = async (data) => {
           data.repartidorId || null,
           data.sucursalOrigenId,
           data.sucursalDestinoId || null,
-          data.destinoTexto || "",
+          encryptField(data.destinoTexto || ""),
           data.descripcion || "",
           "En Almacén",
           data.pesoKg ?? 0,
@@ -760,22 +783,29 @@ export const createPackage = async (data) => {
   }
 
   await query(
-    "INSERT INTO historial_estados (paquete_id, estado) VALUES ($1, $2)",
-    [pkgRow.id, "En Almacén"]
+    "INSERT INTO historial_estados (paquete_id, estado, usuario_ref, usuario_nombre) VALUES ($1, $2, $3, $4)",
+    [pkgRow.id, "En Almacén", data.actorId || null, data.actorNombre || null]
   );
 
   return mapPackageRow(pkgRow);
 };
 
 /** Cambia el estado de un paquete y registra el cambio en historial_estados */
-export const updatePackageStatus = async (id, estado, observacion = "") => {
+export const updatePackageStatus = async (id, estado, observacion = "", actor = null) => {
   const { rows } = await query(
     "UPDATE paquetes SET estado_actual = $1 WHERE id = $2 RETURNING *",
     [estado, id]
   );
   await query(
-    "INSERT INTO historial_estados (paquete_id, estado, observacion) VALUES ($1, $2, $3)",
-    [id, estado, observacion]
+    `INSERT INTO historial_estados (paquete_id, estado, observacion, usuario_ref, usuario_nombre)
+     VALUES ($1, $2, $3, $4, $5)`,
+    [
+      id,
+      estado,
+      encryptField(observacion || ""),
+      actor?.id || null,
+      actor?.nombre || null
+    ]
   );
   return rows[0] ? mapPackageRow(rows[0]) : null;
 };
@@ -783,8 +813,9 @@ export const updatePackageStatus = async (id, estado, observacion = "") => {
 /** Reprograma la entrega de un paquete: guarda nueva fecha/hora/dirección y cambia estado a "En Tránsito" */
 export const updatePackageReprogramar = async (
   id,
-  { fecha, horaInicio, horaFin, direccion }
+  { fecha, horaInicio, horaFin, direccion, actorId, actorNombre }
 ) => {
+  const destino = direccion && String(direccion).trim() ? encryptField(direccion.trim()) : null;
   const updates = [
     "reprogramacion_fecha = $1",
     "reprogramacion_hora_inicio = $2",
@@ -792,10 +823,10 @@ export const updatePackageReprogramar = async (
     "reprogramacion_direccion = $4",
     "estado_actual = $5"
   ];
-  const params = [fecha, horaInicio, horaFin, direccion || null, "En Tránsito"];
-  if (direccion && String(direccion).trim()) {
+  const params = [fecha, horaInicio, horaFin, destino, "En Tránsito"];
+  if (destino) {
     updates.push("destino_texto = $6");
-    params.push(direccion.trim());
+    params.push(destino);
   }
   params.push(id);
   const { rows } = await query(
@@ -803,8 +834,9 @@ export const updatePackageReprogramar = async (
     params
   );
   await query(
-    "INSERT INTO historial_estados (paquete_id, estado, observacion) VALUES ($1, $2, $3)",
-    [id, "En Tránsito", "Reprogramado para entrega"]
+    `INSERT INTO historial_estados (paquete_id, estado, observacion, usuario_ref, usuario_nombre)
+     VALUES ($1, $2, $3, $4, $5)`,
+    [id, "En Tránsito", encryptField("Reprogramado para entrega"), actorId || null, actorNombre || null]
   );
   return rows[0] ? mapPackageRow(rows[0]) : null;
 };
@@ -844,7 +876,7 @@ export const getTrackingByCode = async (code) => {
   if (!rows[0]) return null;
   const pkg = mapPackageDetailsRow(rows[0]);
   const history = await query(
-    "SELECT estado, fecha_hora, observacion FROM historial_estados WHERE paquete_id = $1 ORDER BY fecha_hora ASC",
+    "SELECT estado, fecha_hora, observacion, usuario_ref, usuario_nombre FROM historial_estados WHERE paquete_id = $1 ORDER BY fecha_hora ASC",
     [pkg.id]
   );
   return {
@@ -868,7 +900,9 @@ export const getTrackingByCode = async (code) => {
     historial: history.rows.map((row) => ({
       estado: row.estado,
       fechaHora: toIsoUtc(row.fecha_hora),
-      observacion: row.observacion
+      observacion: decryptField(row.observacion),
+      usuarioId: row.usuario_ref || null,
+      usuarioNombre: row.usuario_nombre || null
     }))
   };
 };
@@ -880,8 +914,8 @@ export const listDistributors = async () => {
     id: row.id,
     nombre: row.nombre,
     razonSocial: row.razon_social,
-    telefono: row.telefono,
-    direccion: row.direccion,
+    telefono: decryptField(row.telefono),
+    direccion: decryptField(row.direccion),
     creadoEn: row.creado_en
   }));
 };
@@ -894,8 +928,8 @@ export const createDistributor = async (data) => {
     [
       data.nombre || "Distribuidora",
       data.razonSocial || "",
-      data.telefono || "",
-      data.direccion || ""
+      encryptField(data.telefono || ""),
+      encryptField(data.direccion || "")
     ]
   );
   const row = rows[0];
@@ -903,11 +937,100 @@ export const createDistributor = async (data) => {
     id: row.id,
     nombre: row.nombre,
     razonSocial: row.razon_social,
-    telefono: row.telefono,
-    direccion: row.direccion,
+    telefono: decryptField(row.telefono),
+    direccion: decryptField(row.direccion),
     creadoEn: row.creado_en
   };
 };
 
 /** Retorna la lista de estados posibles de un paquete */
 export const listStatuses = () => statuses;
+
+const encryptStoredColumn = async (table, column) => {
+  const { rows } = await query(
+    `SELECT id, ${column} AS value FROM ${table}
+     WHERE ${column} IS NOT NULL AND ${column}::text <> '' AND ${column}::text NOT LIKE 'enc:v1:%'`
+  );
+  for (const row of rows) {
+    await query(`UPDATE ${table} SET ${column} = $1 WHERE id = $2`, [
+      encryptField(row.value),
+      row.id
+    ]);
+  }
+};
+
+/** Ajusta el esquema existente: auditoría, usuario del historial, índices y cifrado. */
+export const ensureComplianceSchema = async () => {
+  await query(`ALTER TABLE historial_estados ADD COLUMN IF NOT EXISTS usuario_ref VARCHAR(80)`);
+  await query(`ALTER TABLE historial_estados ADD COLUMN IF NOT EXISTS usuario_nombre VARCHAR(120)`);
+  await query(`
+    CREATE TABLE IF NOT EXISTS auditoria (
+      id SERIAL PRIMARY KEY,
+      fecha TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      usuario_ref VARCHAR(80),
+      usuario_nombre VARCHAR(120),
+      accion VARCHAR(40) NOT NULL,
+      recurso VARCHAR(40),
+      detalle VARCHAR(500)
+    )
+  `);
+  await query(`CREATE INDEX IF NOT EXISTS idx_paquetes_estado ON paquetes (estado_actual)`);
+  await query(`CREATE INDEX IF NOT EXISTS idx_paquetes_creado ON paquetes (creado_en)`);
+  await query(`CREATE INDEX IF NOT EXISTS idx_paquetes_repartidor ON paquetes (repartidor_id)`);
+  await query(`CREATE INDEX IF NOT EXISTS idx_historial_paquete ON historial_estados (paquete_id, fecha_hora)`);
+  await query(`
+    DO $$ BEGIN
+      ALTER TABLE paquetes
+        ADD CONSTRAINT paquetes_estado_check
+        CHECK (estado_actual IN ('En Almacén', 'En Tránsito', 'Entregado', 'Intento fallido'));
+    EXCEPTION WHEN duplicate_object THEN NULL;
+    END $$
+  `);
+  for (const [table, column] of [
+    ["clientes", "documento"],
+    ["clientes", "telefono"],
+    ["clientes", "direccion"],
+    ["usuarios", "telefono"],
+    ["distribuidoras", "telefono"],
+    ["distribuidoras", "direccion"],
+    ["sucursales", "direccion"],
+    ["paquetes", "destino_texto"],
+    ["paquetes", "reprogramacion_direccion"],
+    ["historial_estados", "observacion"]
+  ]) {
+    await encryptStoredColumn(table, column);
+  }
+};
+
+export const appendAudit = async (entry) => {
+  const { rows } = await query(
+    `INSERT INTO auditoria (usuario_ref, usuario_nombre, accion, recurso, detalle)
+     VALUES ($1, $2, $3, $4, $5)
+     RETURNING id, fecha`,
+    [
+      entry.userId || null,
+      entry.userName || null,
+      entry.action,
+      entry.resource || null,
+      entry.detail || null
+    ]
+  );
+  return rows[0] || null;
+};
+
+export const listAudit = async (limit = 50) => {
+  const { rows } = await query(
+    `SELECT id, fecha, usuario_ref, usuario_nombre, accion, recurso, detalle
+     FROM auditoria ORDER BY id DESC LIMIT $1`,
+    [Math.min(Number(limit) || 50, 500)]
+  );
+  return rows.map((row) => ({
+    id: row.id,
+    fecha: toIsoUtc(row.fecha),
+    userId: row.usuario_ref,
+    userName: row.usuario_nombre,
+    action: row.accion,
+    resource: row.recurso,
+    detail: row.detalle
+  }));
+};

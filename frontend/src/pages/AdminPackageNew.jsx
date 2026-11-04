@@ -32,6 +32,7 @@ const emptyForm = {
   operadorId: "",
   repartidorId: "",
   sucursalOrigenId: "",
+  sucursalDestinoId: "",
   destinoTexto: "",
   descripcion: "",
   pesoKg: "",
@@ -117,9 +118,23 @@ const AdminPackageNew = () => {
     }
   }, [user]);
 
+  const liveError = (name, value) => {
+    if (name === "sucursalOrigenId" && !value) return "Selecciona una sucursal.";
+    if (name === "sucursalDestinoId" && !value) return "Selecciona la sucursal de destino.";
+    if (name === "destinoTexto" && !String(value).trim()) return "Ingresa el destino.";
+    if (name === "descripcion" && !String(value).trim()) return "Ingresa la descripcion.";
+    if (name === "pesoKg" && !(parseFloat(value) > 0)) return "El peso debe ser mayor a 0.";
+    if (name === "repartidorId" && !value) return "Selecciona un repartidor.";
+    if (name === "operadorId" && !value) return "Selecciona un operador.";
+    if (name === "destinatarioId" && !value) return "Selecciona un cliente.";
+    if (name === "remitenteId" && !value) return "Selecciona una distribuidora.";
+    if (name === "remitenteClienteId" && !value) return "Selecciona un cliente remitente.";
+    return "";
+  };
+
   const handleChange = (event) => {
     const { name, value } = event.target;
-    setFieldErrors((prev) => ({ ...prev, [name]: "" }));
+    setFieldErrors((prev) => ({ ...prev, [name]: liveError(name, value) }));
     setForm((prev) => {
       const next = { ...prev, [name]: value };
       if (name === "tipoEnvio") {
@@ -315,6 +330,7 @@ const AdminPackageNew = () => {
     if (!operadorFinal) nextErrors.operadorId = "Selecciona un operador.";
     if (!form.repartidorId) nextErrors.repartidorId = "Selecciona un repartidor.";
     if (!form.sucursalOrigenId) nextErrors.sucursalOrigenId = "Selecciona una sucursal.";
+    if (!form.sucursalDestinoId) nextErrors.sucursalDestinoId = "Selecciona la sucursal de destino.";
     if (!form.destinoTexto.trim()) nextErrors.destinoTexto = "Ingresa el destino.";
     if (!form.descripcion.trim()) nextErrors.descripcion = "Ingresa la descripcion.";
     const peso = parseFloat(form.pesoKg) || 0;
@@ -575,6 +591,28 @@ const AdminPackageNew = () => {
               </select>
               {fieldErrors.sucursalOrigenId && (
                 <span className="mt-1 block text-xs text-red-600">{fieldErrors.sucursalOrigenId}</span>
+              )}
+            </label>
+            <label className="text-sm text-slate-600">
+              Sucursal destino *
+              <select
+                name="sucursalDestinoId"
+                value={form.sucursalDestinoId}
+                onChange={handleChange}
+                className={`mt-2 w-full rounded-xl border px-4 py-3 text-sm ${
+                  fieldErrors.sucursalDestinoId ? "border-red-300" : "border-slate-200"
+                }`}
+                required
+              >
+                <option value="">Seleccionar sucursal</option>
+                {branches.map((branch) => (
+                  <option key={branch.id} value={branch.id}>
+                    {branch.nombre}
+                  </option>
+                ))}
+              </select>
+              {fieldErrors.sucursalDestinoId && (
+                <span className="mt-1 block text-xs text-red-600">{fieldErrors.sucursalDestinoId}</span>
               )}
               {branches.length === 0 && isAdmin && (
                 <button

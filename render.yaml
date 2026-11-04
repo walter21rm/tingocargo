@@ -28,6 +28,36 @@ services:
         value: https://tingocargo-web.onrender.com
       - key: BACKEND_URL
         value: https://tingocargo-api.onrender.com
+      - key: DATA_ENCRYPTION_KEY
+        sync: false
+      - key: INACTIVIDAD_MINUTOS
+        value: "30"
+
+  - type: cron
+    name: tingocargo-keepalive
+    runtime: node
+    plan: free
+    rootDir: backend
+    schedule: "*/10 * * * *"
+    buildCommand: npm install
+    startCommand: node scripts/keepalive.js
+    envVars:
+      - key: HEALTH_URL
+        value: https://tingocargo-api.onrender.com/api/health
+      - key: AVAILABILITY_URL
+        value: https://tingocargo-api.onrender.com/api/health/ping
+
+  - type: cron
+    name: tingocargo-backup
+    runtime: node
+    plan: free
+    rootDir: backend
+    schedule: "0 8 * * *"
+    buildCommand: npm install
+    startCommand: node scripts/backup-db.js
+    envVars:
+      - key: DATABASE_URL
+        sync: false
 
   - type: web
     name: tingocargo-web

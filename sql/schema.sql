@@ -59,7 +59,7 @@ CREATE TABLE paquetes (
   sucursal_destino_id INT REFERENCES sucursales(id),
   destino_texto VARCHAR(200) NOT NULL,
   descripcion VARCHAR(200),
-  estado_actual VARCHAR(30) NOT NULL,
+  estado_actual VARCHAR(30) NOT NULL CHECK (estado_actual IN ('En Almacén', 'En Tránsito', 'Entregado', 'Intento fallido')),
   reprogramacion_fecha DATE,
   reprogramacion_hora_inicio VARCHAR(5),
   reprogramacion_hora_fin VARCHAR(5),
@@ -75,7 +75,25 @@ CREATE TABLE paquetes (
 CREATE TABLE historial_estados (
   id SERIAL PRIMARY KEY,
   paquete_id INT NOT NULL REFERENCES paquetes(id),
-  estado VARCHAR(30) NOT NULL,
+  estado VARCHAR(30) NOT NULL CHECK (estado IN ('En Almacén', 'En Tránsito', 'Entregado', 'Intento fallido')),
   fecha_hora TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  observacion VARCHAR(200)
+  observacion VARCHAR(200),
+  usuario_ref VARCHAR(80),
+  usuario_nombre VARCHAR(120)
+);
+
+CREATE INDEX IF NOT EXISTS idx_paquetes_estado ON paquetes (estado_actual);
+CREATE INDEX IF NOT EXISTS idx_paquetes_creado ON paquetes (creado_en);
+CREATE INDEX IF NOT EXISTS idx_paquetes_repartidor ON paquetes (repartidor_id);
+CREATE INDEX IF NOT EXISTS idx_paquetes_codigo ON paquetes (codigo_seguimiento);
+CREATE INDEX IF NOT EXISTS idx_historial_paquete ON historial_estados (paquete_id, fecha_hora);
+
+CREATE TABLE auditoria (
+  id SERIAL PRIMARY KEY,
+  fecha TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  usuario_ref VARCHAR(80),
+  usuario_nombre VARCHAR(120),
+  accion VARCHAR(40) NOT NULL,
+  recurso VARCHAR(40),
+  detalle VARCHAR(500)
 );

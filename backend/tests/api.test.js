@@ -268,6 +268,7 @@ describe("API logística", () => {
         remitenteId: "d1",
         destinatarioId: "c1",
         sucursalOrigenId: "b1",
+        sucursalDestinoId: "b2",
         destinoTexto: "Jr. Test 123",
         descripcion: "Caja prueba",
         repartidorId: courierUser.id
@@ -291,6 +292,7 @@ describe("API logística", () => {
         remitenteId: "d1",
         destinatarioId: "c1",
         sucursalOrigenId: "b1",
+        sucursalDestinoId: "b2",
         destinoTexto: "Jr. Courier 456",
         descripcion: "Caja courier",
         operadorId: operatorUser.id,
@@ -319,6 +321,7 @@ describe("API logística", () => {
         operadorId: operatorUser.id,
         repartidorId: courierUser.id,
         sucursalOrigenId: "b1",
+        sucursalDestinoId: "b2",
         destinoTexto: "Jr. Cliente a Cliente 789",
         descripcion: "Sobre de documentos"
       })
@@ -356,6 +359,7 @@ describe("API logística", () => {
         remitenteId: "d1",
         destinatarioId: "c1",
         sucursalOrigenId: "b1",
+        sucursalDestinoId: "b2",
         destinoTexto: "Jr. No permitido"
       })
     });

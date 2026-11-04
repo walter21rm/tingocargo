@@ -12,10 +12,39 @@
  * ============================================================
  */
 
-import { v4 as uuid } from "uuid";
+import fs, { readFileSync } from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
-import { readFileSync } from "fs";
+import { v4 as uuid } from "uuid";
+
+const dataDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../data");
+const auditFile = path.join(dataDir, "auditoria.jsonl");
+const auditLog = [];
+try {
+  const raw = fs.readFileSync(auditFile, "utf8");
+  for (const line of raw.split("\n")) {
+    if (!line.trim()) continue;
+    auditLog.push(JSON.parse(line));
+  }
+} catch {
+  /* todavía no hay auditoría en disco */
+}
+
+export const appendAudit = (entry) => {
+  const row = { id: auditLog.length + 1, ...entry };
+  auditLog.push(row);
+  if (auditLog.length > 5000) auditLog.shift();
+  try {
+    fs.mkdirSync(dataDir, { recursive: true });
+    fs.appendFileSync(auditFile, JSON.stringify(row) + "\n");
+  } catch (err) {
+    console.error("No se pudo persistir la auditoría:", err.message);
+  }
+  return row;
+};
+
+export const listAudit = (limit = 50) =>
+  auditLog.slice(-Math.min(Number(limit) || 50, 500)).reverse();
 
 /* ── Carga de parametrización desde config.json ──────────── */
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -201,13 +230,22 @@ export const createClient = (data) => {
   return client;
 };
 
-export const listPackages = (status) => {
-  if (!status) return packages;
-  return packages.filter((p) => p.estadoActual === status);
+const applyPage = (rows, options = {}) => {
+  const limit = Number(options.limit) || 0;
+  const offset = Number(options.offset) || 0;
+  if (limit <= 0) return rows;
+  return rows.slice(offset, offset + limit);
 };
 
-export const listPackagesDetailed = (status) =>
-  listPackages(status).map(buildPackageDetails);
+export const listPackages = (status, options = {}) => {
+  const rows = !status
+    ? packages
+    : packages.filter((p) => p.estadoActual === status);
+  return applyPage(rows, options);
+};
+
+export const listPackagesDetailed = (status, options = {}) =>
+  listPackages(status, options).map(buildPackageDetails);
 
 export const listPackagesByCourier = (courierId) =>
   packages
@@ -251,21 +289,34 @@ export const createPackage = (data) => {
     quienPaga: data.quienPaga || "remitente",
     pagado: data.pagado ?? false,
     creadoEn: now(),
-    historial: [{ estado: "En Almacén", fechaHora: now() }]
+    historial: [
+      {
+        estado: "En Almacén",
+        fechaHora: now(),
+        usuarioId: data.actorId || null,
+        usuarioNombre: data.actorNombre || null
+      }
+    ]
   };
   packages.push(pkg);
   return pkg;
 };
 
-export const updatePackageStatus = (id, estado, observacion = "") => {
+export const updatePackageStatus = (id, estado, observacion = "", actor = null) => {
   const pkg = packages.find((p) => p.id === id);
   if (!pkg) return null;
   pkg.estadoActual = estado;
-  pkg.historial.push({ estado, fechaHora: now(), observacion });
+  pkg.historial.push({
+    estado,
+    fechaHora: now(),
+    observacion,
+    usuarioId: actor?.id || null,
+    usuarioNombre: actor?.nombre || null
+  });
   return pkg;
 };
 
-export const updatePackageReprogramar = (id, { fecha, horaInicio, horaFin, direccion }) => {
+export const updatePackageReprogramar = (id, { fecha, horaInicio, horaFin, direccion, actorId, actorNombre }) => {
   const pkg = packages.find((p) => p.id === id);
   if (!pkg) return null;
   pkg.reprogramacionFecha = fecha;
@@ -276,7 +327,13 @@ export const updatePackageReprogramar = (id, { fecha, horaInicio, horaFin, direc
     pkg.destinoTexto = direccion.trim();
   }
   pkg.estadoActual = "En Tránsito";
-  pkg.historial.push({ estado: "En Tránsito", fechaHora: now(), observacion: "Reprogramado para entrega" });
+  pkg.historial.push({
+    estado: "En Tránsito",
+    fechaHora: now(),
+    observacion: "Reprogramado para entrega",
+    usuarioId: actorId || null,
+    usuarioNombre: actorNombre || null
+  });
   return pkg;
 };
 

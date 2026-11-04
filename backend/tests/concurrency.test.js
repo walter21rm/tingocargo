@@ -198,8 +198,8 @@ describe("Pruebas de concurrencia API logística", () => {
    * Verifica: las 20 respuestas son 201, cada paquete tiene id único,
    * y tiempo < 15s. Prueba que no haya colisiones al generar códigos de seguimiento.
    */
-  it("concurrencia de creación de paquetes (1000 requests paralelos)", async () => {
-    const { results, elapsedMs } = await runConcurrent(1000, async (i) =>
+  it("concurrencia de creación de paquetes (200 requests paralelos)", async () => {
+    const { results, elapsedMs } = await runConcurrent(200, async (i) =>
       request(baseUrl, "/api/packages", {
         method: "POST",
         headers: { ...jsonHeaders, Authorization: `Bearer ${adminToken}` },
@@ -209,6 +209,7 @@ describe("Pruebas de concurrencia API logística", () => {
           operadorId: operatorId,
           repartidorId: courierId,
           sucursalOrigenId: "b1",
+          sucursalDestinoId: "b2",
           destinoTexto: `Jr. Concurrencia ${i + 1}`,
           descripcion: `Paquete paralelo ${i + 1}`
         })

@@ -32,6 +32,7 @@ import {
   parseExternalReference,
   paymentStatusMessage
 } from "./mercadopago.js";
+import { availabilityReport, recordAvailability } from "./availability.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 dotenv.config({ path: path.resolve(__dirname, "../.env") });
@@ -91,8 +92,31 @@ const FRONTEND_PUBLIC_URL =
 const BACKEND_PUBLIC_URL =
   process.env.BACKEND_URL || process.env.RENDER_EXTERNAL_URL || "";
 
-/** Mapa en memoria que asocia cada token UUID con los datos del usuario autenticado */
+/** Mapa en memoria que asocia cada token UUID con el usuario y su última actividad */
 const authTokens = new Map();
+const IDLE_MINUTES = Number(
+  process.env.INACTIVIDAD_MINUTOS || conf.auth?.inactividadMinutos || 30
+);
+let sessionIdleMs = IDLE_MINUTES * 60 * 1000;
+
+export const setSessionIdleMs = (ms) => {
+  sessionIdleMs = ms;
+};
+
+const saveSession = (token, user) => {
+  authTokens.set(token, { user, lastSeen: Date.now() });
+};
+
+const readSession = (token) => {
+  const session = authTokens.get(token);
+  if (!session) return null;
+  if (Date.now() - session.lastSeen > sessionIdleMs) {
+    authTokens.delete(token);
+    return null;
+  }
+  session.lastSeen = Date.now();
+  return session.user;
+};
 
 /* ── SE3: Registro de actividad (Audit Log) ─────────────── */
 const activityLog = [];
@@ -108,7 +132,7 @@ const MAX_LOG_ENTRIES = 500;
  */
 const logActivity = (userId, userName, action, resource, detail = "") => {
   if (activityLog.length >= MAX_LOG_ENTRIES) activityLog.shift();
-  activityLog.push({
+  const entry = {
     id: activityLog.length + 1,
     fecha: new Date().toISOString(),
     userId,
@@ -116,7 +140,13 @@ const logActivity = (userId, userName, action, resource, detail = "") => {
     action,
     resource,
     detail
-  });
+  };
+  activityLog.push(entry);
+  if (repo.appendAudit) {
+    Promise.resolve(repo.appendAudit(entry)).catch((err) => {
+      console.error("No se pudo guardar la auditoría:", err.message);
+    });
+  }
 };
 
 /* ── SE4: Rate limiting en login (protección fuerza bruta) ── */
@@ -154,8 +184,24 @@ const clearLoginAttempts = (key) => {
 };
 
 /* ── Middlewares globales ────────────────────────────────── */
+app.set("trust proxy", 1);
 app.use(cors());
 app.use(express.json());
+app.use((req, res, next) => {
+  res.setHeader("X-Content-Type-Options", "nosniff");
+  res.setHeader("Referrer-Policy", "no-referrer");
+  res.setHeader("X-Frame-Options", "DENY");
+  if (process.env.NODE_ENV === "production") {
+    res.setHeader(
+      "Strict-Transport-Security",
+      "max-age=31536000; includeSubDomains"
+    );
+    if (req.headers["x-forwarded-proto"] === "http") {
+      return res.redirect(301, `https://${req.headers.host}${req.originalUrl}`);
+    }
+  }
+  next();
+});
 
 /* ── Funciones auxiliares ───────────────────────────────── */
 
@@ -185,7 +231,7 @@ const requireAdmin = (req, res, next) => {
 /** Determina si una ruta es pública (no requiere token de autenticación) */
 const isPublicRoute = (req) => {
   if (!req.path.startsWith("/api")) return true;
-  if (req.path === "/api/health") return true;
+  if (req.path === "/api/health" || req.path === "/api/health/ping") return true;
   if (req.path === "/api/config/public") return true;
   if (req.path === "/api/auth/login") return true;
   if (req.path === "/api/auth/register") return true;
@@ -206,10 +252,11 @@ app.use((req, res, next) => {
   const token = authHeader.startsWith("Bearer ")
     ? authHeader.slice(7).trim()
     : "";
-  if (!token || !authTokens.has(token)) {
+  const sessionUser = token ? readSession(token) : null;
+  if (!sessionUser) {
     return res.status(401).json({ error: "No autorizado" });
   }
-  req.authUser = authTokens.get(token);
+  req.authUser = sessionUser;
   return next();
 });
 
@@ -377,7 +424,13 @@ const ensureAdminUser = async () => {
 
 /** GET /api/health — Verifica que el servidor esté activo */
 app.get("/api/health", async (req, res) => {
-  res.json(await call(repo.getHealth));
+  const body = await call(repo.getHealth);
+  res.json({ ...body, disponibilidad: availabilityReport() });
+});
+
+app.post("/api/health/ping", (req, res) => {
+  recordAvailability(true);
+  res.json({ ok: true, disponibilidad: availabilityReport() });
 });
 
 /**
@@ -401,6 +454,8 @@ app.get("/api/config/public", (req, res) => {
       paisPorDefecto: "PE",
       paises: []
     },
+    zonaHoraria: ZONA_HORARIA,
+    sesion: { inactividadMinutos: IDLE_MINUTES },
     pagos: {
       mercadopagoEnabled: getMpConfig().enabled,
       testMode: getMpConfig().testMode,
@@ -440,7 +495,7 @@ app.post("/api/auth/login", (req, res) => {
       sucursalId: null,
       activo: true
     };
-    authTokens.set(token, userData);
+    saveSession(token, userData);
     logActivity("admin-env", "Administrador Sistema", "login", "auth", `Inicio de sesión exitoso`);
     return res.json({ token, user: userData });
   }
@@ -461,7 +516,7 @@ app.post("/api/auth/login", (req, res) => {
       const role = roleId ? await call(repo.getRoleById, roleId) : null;
       const roleName = role?.nombre || null;
       const token = crypto.randomUUID();
-      authTokens.set(token, sanitizeUser(user, roleName));
+      saveSession(token, sanitizeUser(user, roleName));
       logActivity(user.id, user.nombre, "login", "auth", `Inicio de sesión exitoso (${roleName})`);
       return res.json({ token, user: sanitizeUser(user, roleName) });
     })
@@ -549,7 +604,7 @@ app.post("/api/auth/register", async (req, res) => {
     passwordHash
   });
   const token = crypto.randomUUID();
-  authTokens.set(token, sanitizeUser({ ...user, clienteId: cliente.id }, "Cliente"));
+  saveSession(token, sanitizeUser({ ...user, clienteId: cliente.id }, "Cliente"));
   res.status(201).json({
     token,
     user: { ...sanitizeUser({ ...user, clienteId: cliente.id }, "Cliente"), clienteId: cliente.id }
@@ -574,13 +629,18 @@ app.post("/api/client/packages", async (req, res) => {
   if (req.authUser?.roleName !== "Cliente" || !req.authUser?.clienteId) {
     return res.status(403).json({ error: "Solo clientes registrados pueden enviar paquetes" });
   }
-  const { destinatarioId, sucursalOrigenId, destinoTexto, descripcion, pesoKg, quienPaga } = req.body || {};
-  if (!destinatarioId || !sucursalOrigenId || !textValue(destinoTexto) || !textValue(descripcion)) {
-    return res.status(400).json({ error: "destinatarioId, sucursalOrigenId, destinoTexto y descripcion son requeridos" });
+  const { destinatarioId, sucursalOrigenId, sucursalDestinoId, destinoTexto, descripcion, pesoKg, quienPaga } = req.body || {};
+  if (!destinatarioId || !sucursalOrigenId || !sucursalDestinoId || !textValue(destinoTexto) || !textValue(descripcion)) {
+    return res.status(400).json({ error: "destinatarioId, sucursalOrigenId, sucursalDestinoId, destinoTexto y descripcion son requeridos" });
   }
   const peso = parseFloat(pesoKg) || 0;
   if (peso <= 0) {
     return res.status(400).json({ error: "El peso debe ser mayor a 0" });
+  }
+  const origenCliente = await call(repo.getBranchById, sucursalOrigenId);
+  const destinoCliente = await call(repo.getBranchById, sucursalDestinoId);
+  if (!origenCliente || !destinoCliente) {
+    return res.status(400).json({ error: "Sucursal inválida" });
   }
   if (String(destinatarioId) === String(req.authUser.clienteId)) {
     return res.status(400).json({ error: "El destinatario debe ser diferente al remitente" });
@@ -591,7 +651,10 @@ app.post("/api/client/packages", async (req, res) => {
     remitenteClienteId: req.authUser.clienteId,
     destinatarioId,
     sucursalOrigenId,
+    sucursalDestinoId,
     destinoTexto: textValue(destinoTexto),
+    actorId: req.authUser?.id,
+    actorNombre: req.authUser?.nombre,
     descripcion: textValue(descripcion),
     pesoKg: peso,
     precioEnvio,
@@ -894,6 +957,9 @@ app.get("/api/clients", async (req, res) => {
 
 /** POST /api/clients — Crea un nuevo cliente (persona o empresa) */
 app.post("/api/clients", async (req, res) => {
+  if (!["Administrador", "Operador logístico"].includes(req.authUser?.roleName)) {
+    return res.status(403).json({ error: "No autorizado" });
+  }
   const { tipo, nombre, documento, email, direccion } = req.body || {};
   if (
     !textValue(tipo) ||
@@ -922,8 +988,18 @@ app.post("/api/clients", async (req, res) => {
 
 /** GET /api/packages — Lista paquetes, opcionalmente filtrados por estado */
 app.get("/api/packages", async (req, res) => {
-  const { status } = req.query;
-  res.json(await call(repo.listPackages, status));
+  const { status, limit, offset } = req.query;
+  const role = req.authUser?.roleName;
+  if (role === "Repartidor" && repo.listPackagesByCourier) {
+    return res.json(await call(repo.listPackagesByCourier, req.authUser.id));
+  }
+  if (role === "Cliente" && req.authUser?.clienteId && repo.listPackagesByClient) {
+    return res.json(await call(repo.listPackagesByClient, req.authUser.clienteId));
+  }
+  if (role !== "Administrador" && role !== "Operador logístico") {
+    return res.status(403).json({ error: "No autorizado" });
+  }
+  res.json(await call(repo.listPackages, status, { limit, offset }));
 });
 
 /**
@@ -951,7 +1027,7 @@ app.get("/api/packages/:id", async (req, res) => {
   }
   if (
     req.authUser?.roleName === "Repartidor" &&
-    pkg.repartidor?.id !== req.authUser.id
+    String(pkg.repartidor?.id) !== String(req.authUser.id)
   ) {
     return res.status(403).json({ error: "No autorizado" });
   }
@@ -1060,6 +1136,7 @@ app.post("/api/packages", async (req, res) => {
     remitenteClienteId,
     destinatarioId,
     sucursalOrigenId,
+    sucursalDestinoId,
     destinoTexto,
     descripcion,
     operadorId,
@@ -1078,6 +1155,7 @@ app.post("/api/packages", async (req, res) => {
   if (
     !destinatarioId ||
     !sucursalOrigenId ||
+    !sucursalDestinoId ||
     !textValue(destinoTexto) ||
     !textValue(descripcion) ||
     !operadorFinal ||
@@ -1085,7 +1163,7 @@ app.post("/api/packages", async (req, res) => {
   ) {
     return res.status(400).json({
       error:
-        "destinatarioId, sucursalOrigenId, destinoTexto, descripcion, operadorId y repartidorId son requeridos"
+        "destinatarioId, sucursalOrigenId, sucursalDestinoId, destinoTexto, descripcion, operadorId y repartidorId son requeridos"
     });
   }
   if (shippingType === "distribuidora_cliente" && !remitenteId) {
@@ -1111,7 +1189,8 @@ app.post("/api/packages", async (req, res) => {
     });
   }
   const origen = await call(repo.getBranchById, sucursalOrigenId);
-  if (!origen) {
+  const destinoSucursal = await call(repo.getBranchById, sucursalDestinoId);
+  if (!origen || !destinoSucursal) {
     return res.status(400).json({ error: "Sucursal inválida" });
   }
   if (operadorFinal) {
@@ -1151,7 +1230,10 @@ app.post("/api/packages", async (req, res) => {
     pesoKg: peso,
     precioEnvio,
     quienPaga: quienPaga === "destinatario" ? "destinatario" : "remitente",
-    pagado: false
+    pagado: false,
+    sucursalDestinoId,
+    actorId: req.authUser?.id,
+    actorNombre: req.authUser?.nombre
   });
   logActivity(req.authUser.id, req.authUser.nombre, "create", "paquete", `Nuevo paquete: ${pkg.codigoSeguimiento}`);
   res.status(201).json(pkg);
@@ -1175,14 +1257,15 @@ app.patch("/api/packages/:id/status", async (req, res) => {
   }
   if (req.authUser?.roleName === "Repartidor") {
     const repartidorId = existing.repartidor_id || existing.repartidorId;
-    if (repartidorId !== req.authUser.id) {
+    if (String(repartidorId) !== String(req.authUser.id)) {
       return res.status(403).json({ error: "No autorizado" });
     }
     if (estado !== "Entregado" && estado !== "Intento fallido") {
       return res.status(403).json({ error: "Acción no permitida" });
     }
   }
-  const pkg = await call(repo.updatePackageStatus, id, estado, observacion);
+  const actor = { id: req.authUser?.id, nombre: req.authUser?.nombre };
+  const pkg = await call(repo.updatePackageStatus, id, estado, observacion, actor);
   logActivity(req.authUser.id, req.authUser.nombre, "status_change", "paquete", `${pkg.codigoSeguimiento || id}: ${estado}${observacion ? " — " + observacion : ""}`);
   res.json(pkg);
 });
@@ -1207,7 +1290,7 @@ app.patch("/api/packages/:id/reprogramar", async (req, res) => {
   }
   if (req.authUser?.roleName === "Repartidor") {
     const repartidorId = existing.repartidor_id || existing.repartidorId;
-    if (repartidorId !== req.authUser.id) {
+    if (String(repartidorId) !== String(req.authUser.id)) {
       return res.status(403).json({ error: "No autorizado" });
     }
   }
@@ -1218,7 +1301,9 @@ app.patch("/api/packages/:id/reprogramar", async (req, res) => {
     fecha,
     horaInicio,
     horaFin,
-    direccion: direccion || null
+    direccion: direccion || null,
+    actorId: req.authUser?.id,
+    actorNombre: req.authUser?.nombre
   });
   res.json(pkg);
 });
@@ -1461,8 +1546,11 @@ app.delete("/api/users/:id", requireAdmin, async (req, res) => {
 /* ── SE3: Endpoint de registro de actividad ──────────────── */
 
 /** GET /api/activity-log — Devuelve el historial de actividad del sistema (solo admin) */
-app.get("/api/activity-log", requireAdmin, (req, res) => {
+app.get("/api/activity-log", requireAdmin, async (req, res) => {
   const limit = Math.min(parseInt(req.query.limit) || 50, MAX_LOG_ENTRIES);
+  if (repo.listAudit) {
+    return res.json(await call(repo.listAudit, limit));
+  }
   const recent = activityLog.slice(-limit).reverse();
   res.json(recent);
 });
@@ -1479,6 +1567,9 @@ app.get("/api/branches", async (req, res) => {
 });
 
 app.post("/api/branches", async (req, res) => {
+  if (req.authUser?.roleName !== "Administrador") {
+    return res.status(403).json({ error: "Solo administrador" });
+  }
   const { nombre, direccion } = req.body;
   if (!textValue(nombre) || !textValue(direccion)) {
     return res.status(400).json({ error: "nombre y direccion son requeridos" });
@@ -1499,6 +1590,9 @@ app.get("/api/distributors", async (req, res) => {
 });
 
 app.post("/api/distributors", async (req, res) => {
+  if (req.authUser?.roleName !== "Administrador") {
+    return res.status(403).json({ error: "Solo administrador" });
+  }
   const { nombre, razonSocial, direccion } = req.body || {};
   if (!textValue(nombre) || !textValue(razonSocial) || !textValue(direccion)) {
     return res.status(400).json({
@@ -1525,6 +1619,9 @@ app.post("/api/distributors", async (req, res) => {
  * Incluye datos completos: remitente, destinatario, estados, historial, etc.
  */
 app.get("/api/reports/packages", async (req, res) => {
+  if (req.authUser?.roleName !== "Administrador") {
+    return res.status(403).json({ error: "Solo administrador" });
+  }
   const format = String(req.query.format || "csv").toLowerCase();
   if (!["csv", "xlsx"].includes(format)) {
     return res.status(400).json({ error: "Formato no soportado" });
@@ -1676,12 +1773,26 @@ app.get("/api/health/detailed", requireAdmin, async (req, res) => {
 
 /* ── Arranque del servidor ────────────────────────────────── */
 
-const startServer = () => {
+const startServer = async () => {
+  if (useDb && repo.ensureComplianceSchema) {
+    try {
+      await repo.ensureComplianceSchema();
+    } catch (err) {
+      console.error("No se pudo preparar el esquema:", err.message);
+    }
+  }
+  recordAvailability(true);
+  const beat = setInterval(() => recordAvailability(true), 10 * 60 * 1000);
+  beat.unref?.();
   app.listen(port, () => {
     console.log(`API logística en http://localhost:${port}`);
     ensureAdminUser();
   });
 };
+
+process.on("unhandledRejection", (err) => {
+  console.error("Promesa no controlada:", err);
+});
 
 if (process.env.NODE_ENV !== "test") {
   startServer();
