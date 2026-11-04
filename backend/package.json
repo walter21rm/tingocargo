@@ -8,7 +8,22 @@
     "start": "node src/server.js",
     "test": "cross-env NODE_ENV=test node --test",
     "test:unit": "cross-env NODE_ENV=test node --test tests/api.test.js",
-    "test:concurrency": "cross-env NODE_ENV=test node --test tests/concurrency.test.js"
+    "test:concurrency": "cross-env NODE_ENV=test node --test tests/concurrency.test.js",
+    "test:rnf": "cross-env NODE_ENV=test node --test --test-concurrency=1 tests/rnf.test.js",
+    "test:rnf:01": "cross-env NODE_ENV=test node --test --test-name-pattern=RNF01 tests/rnf.test.js",
+    "test:rnf:02": "cross-env NODE_ENV=test node --test --test-name-pattern=RNF02 tests/rnf.test.js",
+    "test:rnf:03": "cross-env NODE_ENV=test node --test --test-name-pattern=RNF03 tests/rnf.test.js",
+    "test:rnf:04": "cross-env NODE_ENV=test node --test --test-name-pattern=RNF04 tests/rnf.test.js",
+    "test:rnf:05": "cross-env NODE_ENV=test node --test --test-name-pattern=RNF05 tests/rnf.test.js",
+    "test:rnf:06": "cross-env NODE_ENV=test node --test --test-name-pattern=RNF06 tests/rnf.test.js",
+    "test:rnf:07": "cross-env NODE_ENV=test node --test --test-name-pattern=RNF07 tests/rnf.test.js",
+    "test:rnf:08": "cross-env NODE_ENV=test node --test --test-name-pattern=RNF08 tests/rnf.test.js",
+    "test:rnf:09": "cross-env NODE_ENV=test node --test --test-name-pattern=RNF09 tests/rnf.test.js",
+    "test:rnf:10": "cross-env NODE_ENV=test node --test --test-name-pattern=RNF10 tests/rnf.test.js",
+    "test:rnf:11": "cross-env NODE_ENV=test node --test --test-name-pattern=RNF11 tests/rnf.test.js",
+    "test:rnf:12": "cross-env NODE_ENV=test node --test --test-name-pattern=RNF12 tests/rnf.test.js",
+    "test:rnf:13": "cross-env NODE_ENV=test node --test --test-name-pattern=RNF13 tests/rnf.test.js",
+    "test:rnf:14": "cross-env NODE_ENV=test node --test --test-name-pattern=RNF14 tests/rnf.test.js"
   },
   "dependencies": {
     "bcryptjs": "^3.0.3",

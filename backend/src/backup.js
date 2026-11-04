@@ -36,6 +36,18 @@ const sqlLiteral = (value) => {
   return `'${String(value).replace(/'/g, "''")}'`;
 };
 
+/** Arma INSERTs de un respaldo lógico. No necesita PostgreSQL instalado. */
+export const buildInsertSql = (table, rows) => {
+  const tableName = quoteIdent(table);
+  return rows
+    .map((row) => {
+      const cols = Object.keys(row).map(quoteIdent);
+      const values = Object.values(row).map(sqlLiteral);
+      return `INSERT INTO ${tableName} (${cols.join(", ")}) VALUES (${values.join(", ")});`;
+    })
+    .join("\n");
+};
+
 const dumpWithPg = async (databaseUrl) => {
   const client = new pg.Client(clientConfig(databaseUrl));
   await client.connect();
