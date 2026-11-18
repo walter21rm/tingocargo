@@ -5,20 +5,16 @@
  */
 import { useState } from "react";
 
-const HelpIcon = ({ className = "h-7 w-7" }) => (
+/** Interrogación blanca sólida; el círculo verde lo da el botón. */
+const HelpIcon = ({ className = "h-8 w-8" }) => (
   <svg
     viewBox="0 0 24 24"
     className={className}
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
+    fill="currentColor"
     aria-hidden="true"
   >
-    <circle cx="12" cy="12" r="10" />
-    <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
-    <circle cx="12" cy="17" r="0.85" fill="currentColor" stroke="none" />
+    <path d="M12 4.25c-2.62 0-4.75 1.9-4.75 4.25h2.5c0-1.05.9-1.9 2.25-1.9s2.25.85 2.25 1.9c0 .78-.4 1.32-1.35 2.1-.98.8-1.9 1.72-1.9 3.2V15h2.5v-1.05c0-.7.36-1.18 1.25-1.9 1.28-1.05 2.5-2.2 2.5-4.05 0-2.35-2.13-4.25-4.75-4.25z" />
+    <circle cx="12" cy="18.25" r="1.35" />
   </svg>
 );
 
