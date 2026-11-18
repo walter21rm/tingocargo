@@ -50,8 +50,8 @@ const PhoneField = ({
   return (
     <label className="text-sm text-slate-600">
       {label}
-      <div className="mt-2 grid grid-cols-[170px_1fr] gap-2">
-        <div className="relative" ref={wrapperRef}>
+      <div className="mt-2 flex min-w-0 gap-2">
+        <div className="relative w-[9.5rem] shrink-0 sm:w-[10.5rem]" ref={wrapperRef}>
           <button
             type="button"
             onClick={() => setOpen((prev) => !prev)}
@@ -61,11 +61,11 @@ const PhoneField = ({
             aria-haspopup="listbox"
             aria-expanded={open}
           >
-            <span className="inline-flex items-center gap-2 truncate">
+            <span className="inline-flex min-w-0 items-center gap-2 truncate">
               <img
                 src={`https://flagcdn.com/20x15/${selectedCountry.iso.toLowerCase()}.png`}
                 alt={`Bandera ${selectedCountry.name}`}
-                className="h-[15px] w-[20px] rounded-sm"
+                className="h-[15px] w-[20px] shrink-0 rounded-sm"
                 loading="lazy"
               />
               <span className="truncate">
@@ -120,10 +120,10 @@ const PhoneField = ({
           inputMode="numeric"
           pattern="[0-9]*"
           maxLength={selectedCountry.digits}
-          className={`w-full rounded-xl border px-4 py-3 text-sm ${
+          className={`min-w-0 flex-1 rounded-xl border px-4 py-3 text-sm ${
             error ? "border-red-300" : "border-slate-200"
           }`}
-          placeholder={`Numero de ${selectedCountry.digits} digitos`}
+          placeholder={`${selectedCountry.digits} dígitos`}
           required
         />
       </div>

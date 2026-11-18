@@ -121,7 +121,7 @@ const ClientRegister = () => {
         </div>
       </header>
       <main className="flex-1 flex items-center justify-center px-6 py-12">
-        <div className="w-full max-w-md rounded-3xl border border-slate-200 bg-white p-8 shadow-lg">
+        <div className="w-full max-w-md overflow-hidden rounded-3xl border border-slate-200 bg-white p-6 shadow-lg sm:p-8">
           <h1 className="text-xl font-bold text-slate-900">Crear cuenta</h1>
           <p className="mt-1 text-sm text-slate-500">
             Regístrate para enviar paquetes y rastrear tus envíos
@@ -130,14 +130,14 @@ const ClientRegister = () => {
             Si te agregaron como destinatario, usa el mismo DNI/RUC para ver y pagar tus paquetes.
           </p>
           <form onSubmit={handleSubmit} className="mt-6 space-y-4" autoComplete="off">
-            <div className="block text-sm text-slate-600">
+            <div className="block min-w-0 text-sm text-slate-600">
               Documento *
-              <div className="mt-2 flex gap-2">
+              <div className="mt-2 flex min-w-0 gap-2">
                 <select
                   name="tipoDocumento"
                   value={form.tipoDocumento}
                   onChange={handleChange}
-                  className="w-24 rounded-xl border border-slate-200 px-4 py-3 text-sm"
+                  className="w-20 shrink-0 rounded-xl border border-slate-200 px-2 py-3 text-sm"
                 >
                   <option value="dni">DNI</option>
                   <option value="ruc">RUC</option>
@@ -150,7 +150,7 @@ const ClientRegister = () => {
                   maxLength={form.tipoDocumento === "dni" ? 8 : 11}
                   inputMode="numeric"
                   pattern="[0-9]*"
-                  className="flex-1 rounded-xl border border-slate-200 px-4 py-3 text-sm placeholder:text-slate-400"
+                  className="min-w-0 flex-1 rounded-xl border border-slate-200 px-4 py-3 text-sm placeholder:text-slate-400"
                   placeholder={form.tipoDocumento === "dni" ? "8 dígitos" : "11 dígitos"}
                 />
               </div>

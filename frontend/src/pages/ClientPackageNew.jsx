@@ -418,14 +418,14 @@ const ClientPackageNew = () => {
               Ingresa los datos de la persona que recibirá el paquete
             </p>
             <form onSubmit={handleCreateClient} className="mt-6 space-y-4" autoComplete="off">
-              <div className="block text-sm text-slate-600">
+              <div className="block min-w-0 text-sm text-slate-600">
                 Documento *
-                <div className="mt-2 flex gap-2">
+                <div className="mt-2 flex min-w-0 gap-2">
                   <select
                     name="tipoDocumento"
                     value={newClient.tipoDocumento}
                     onChange={handleNewClientChange}
-                    className="w-24 rounded-xl border border-slate-200 px-4 py-3 text-sm"
+                    className="w-20 shrink-0 rounded-xl border border-slate-200 px-2 py-3 text-sm"
                   >
                     <option value="dni">DNI</option>
                     <option value="ruc">RUC</option>
@@ -438,7 +438,7 @@ const ClientPackageNew = () => {
                     maxLength={newClient.tipoDocumento === "dni" ? 8 : 11}
                     inputMode="numeric"
                     pattern="[0-9]*"
-                    className="flex-1 rounded-xl border border-slate-200 px-4 py-3 text-sm placeholder:text-slate-400"
+                    className="min-w-0 flex-1 rounded-xl border border-slate-200 px-4 py-3 text-sm placeholder:text-slate-400"
                     placeholder={newClient.tipoDocumento === "dni" ? "8 dígitos" : "11 dígitos"}
                   />
                 </div>
