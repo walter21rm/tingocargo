@@ -788,6 +788,7 @@ def main():
             final_pdf = a_pdf(SALIDA, tmp)
             paginas2, total2 = paginas_de_titulos(final_pdf, ctx["titulos_previos"])
         shutil.copy(final_pdf, EVAL / "resultados" / "vista_previa_informe.pdf")
+        shutil.copy(final_pdf, SALIDA.with_suffix(".pdf"))
     faltan = [t for _, t in ctx["titulos_previos"] if t not in paginas2]
     print(f"Documento: {SALIDA.relative_to(REPO)}  ({total2} páginas en LibreOffice)")
     print(f"M1.1={m['m11']:.2f} M2.1={m['m21']:.2f} " + " ".join(f"{x['id']}={x['valor']:.2f}" for x in o) + f" M3.2={m['m32']:.2f}")
