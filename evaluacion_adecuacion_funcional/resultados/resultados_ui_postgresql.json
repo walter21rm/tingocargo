@@ -1,0 +1,261 @@
+{
+  "modo": "postgresql",
+  "web": "http://127.0.0.1:5173",
+  "api": "http://127.0.0.1:4100",
+  "fecha": "2026-11-19T04:22:23.111Z",
+  "casos": [
+    {
+      "id": "CP-88",
+      "funcion": "FD-05",
+      "titulo": "La fecha de la entrega reprogramada se muestra en el seguimiento",
+      "entrada": "Seguimiento de TM-2026-2307, reprogramado para mañana (CP-84)",
+      "esperado": "«Próxima entrega programada» muestra la fecha (día, mes y año) y la ventana horaria",
+      "modo": "postgresql",
+      "pasa": false,
+      "obtenido": "Se muestra «Próxima entrega programada Invalid Date • 09:00 — 12:00 Jr. Callao 999, Tingo María»",
+      "nota": ""
+    },
+    {
+      "id": "CP-71",
+      "funcion": "RF-20",
+      "titulo": "Repartidor inicia sesión en el panel",
+      "entrada": "Credenciales de Pedro Quispe",
+      "esperado": "Llega a una vista permitida para su rol (por ejemplo «Mis entregas»)",
+      "modo": "postgresql",
+      "pasa": false,
+      "obtenido": "Ruta /admin: el guardián de ruta redirige a la misma ruta y el área principal queda vacía",
+      "nota": ""
+    },
+    {
+      "id": "CP-50",
+      "funcion": "RF-13",
+      "titulo": "Repartidor abre «Mis entregas» desde el menú",
+      "entrada": "Menú lateral → Paquetes",
+      "esperado": "Título «Mis entregas» y solo paquetes asignados al repartidor",
+      "modo": "postgresql",
+      "pasa": true,
+      "obtenido": "Título «Mis entregas»; incluye TM-2026-9990 (propio) y no incluye TM-2026-5730 (de otro repartidor)",
+      "nota": ""
+    },
+    {
+      "id": "CP-58",
+      "funcion": "RF-16",
+      "titulo": "Botón «Llamar» del operador en el detalle del paquete",
+      "entrada": "Detalle de TM-2026-7157 con operador Ana Torres",
+      "esperado": "Enlace de llamada (tel:) al teléfono del operador asignado (+51983426245)",
+      "modo": "postgresql",
+      "pasa": true,
+      "obtenido": "Enlace tel:51983426245 («Llamar a Ana Torres»)",
+      "nota": "El enlace omite el prefijo «+» del formato internacional (ver observación OB-03)"
+    },
+    {
+      "id": "CP-60",
+      "funcion": "RF-17",
+      "titulo": "Botón «Llamar» del repartidor en el detalle del paquete",
+      "entrada": "Detalle de TM-2026-7157 con repartidor Pedro Quispe",
+      "esperado": "Enlace de llamada (tel:) al teléfono del repartidor asignado (+51936583754)",
+      "modo": "postgresql",
+      "pasa": true,
+      "obtenido": "Enlace tel:51936583754 («Llamar a Pedro Quispe»)",
+      "nota": "El enlace omite el prefijo «+» del formato internacional (ver observación OB-03)"
+    },
+    {
+      "id": "CP-62",
+      "funcion": "RF-18",
+      "titulo": "Botón «Llamar» del cliente en el detalle del paquete",
+      "entrada": "Detalle de TM-2026-7157 con cliente Carlos Mendoza",
+      "esperado": "Enlace de llamada (tel:) al teléfono del cliente asignado (+51980011072)",
+      "modo": "postgresql",
+      "pasa": true,
+      "obtenido": "Enlace tel:51980011072 («Llamar a Carlos Mendoza»)",
+      "nota": "El enlace omite el prefijo «+» del formato internacional (ver observación OB-03)"
+    },
+    {
+      "id": "CP-63",
+      "funcion": "RF-19",
+      "titulo": "«Ver ubicación en mapa» con dirección completa",
+      "entrada": "Destino «Jr. Callao 456, Tingo María»",
+      "esperado": "Abre Google Maps (maps/search, api=1) con la dirección de entrega",
+      "modo": "postgresql",
+      "pasa": true,
+      "obtenido": "Abre https://www.google.com/maps/search/?api=1&query=Jr.%20Callao%20456%2C%20Tingo%20Mar%C3%ADa",
+      "nota": ""
+    },
+    {
+      "id": "CP-64",
+      "funcion": "RF-19",
+      "titulo": "«Ver ubicación en mapa» con dirección sin ciudad",
+      "entrada": "Destino «Jr. Los Pinos 145» (sucursal destino: Jr. Monzón 456, Tingo María)",
+      "esperado": "La consulta se completa con la dirección de la sucursal de destino",
+      "modo": "postgresql",
+      "pasa": true,
+      "obtenido": "Consulta «Jr. Los Pinos 145, Jr. Monzón 456, Tingo María»",
+      "nota": ""
+    },
+    {
+      "id": "CP-20",
+      "funcion": "RF-06",
+      "titulo": "El formulario de edición precarga el teléfono del usuario",
+      "entrada": "Editar usuario Pedro Quispe",
+      "esperado": "El campo teléfono muestra el número registrado (9 dígitos) y el país",
+      "modo": "postgresql",
+      "pasa": false,
+      "obtenido": "Campo teléfono vacío: el número registrado no se precarga",
+      "nota": ""
+    }
+  ],
+  "capturas": [
+    {
+      "archivo": "E01_inicio_publico.png",
+      "titulo": "Página de inicio pública con el buscador de seguimiento (RF-01)"
+    },
+    {
+      "archivo": "E02_seguimiento_publico.png",
+      "titulo": "Seguimiento público del paquete TM-2026-2307: estado, datos y línea de tiempo (RF-01, RF-04, FD-05)"
+    },
+    {
+      "archivo": "D14_fecha_reprogramada_invalida.png",
+      "titulo": "«Próxima entrega programada» del paquete TM-2026-2307 muestra «Invalid Date» (CP-88)"
+    },
+    {
+      "archivo": "D03_seguimiento_marcado_por_cliente.png",
+      "titulo": "El paquete TM-2026-8481 figura «Entregado» porque un usuario con rol Cliente cambió su estado (CP-69)"
+    },
+    {
+      "archivo": "E03_login_panel.png",
+      "titulo": "Inicio de sesión del panel administrativo (RF-05)"
+    },
+    {
+      "archivo": "D01_repartidor_pantalla_vacia.png",
+      "titulo": "Tras iniciar sesión, el repartidor queda en /admin con el área principal vacía (CP-71)"
+    },
+    {
+      "archivo": "E09_mis_entregas_repartidor.png",
+      "titulo": "Vista «Mis entregas» del repartidor: solo sus paquetes asignados (RF-13)"
+    },
+    {
+      "archivo": "E08_intento_fallido_modal.png",
+      "titulo": "El repartidor registra un intento fallido con su observación (RF-14)"
+    },
+    {
+      "archivo": "E08b_intento_fallido_registrado.png",
+      "titulo": "Paquete con estado «Intento fallido» y la observación del repartidor en la línea de tiempo (RF-14, RF-04)"
+    },
+    {
+      "archivo": "E04_dashboard_operador.png",
+      "titulo": "Dashboard del operador logístico con indicadores y últimos paquetes"
+    },
+    {
+      "archivo": "E06_detalle_paquete.png",
+      "titulo": "Detalle del paquete TM-2026-7157: remitente, operador, repartidor, cliente, acciones y línea de tiempo (RF-04, RF-11, RF-12, RF-16 a RF-19)"
+    },
+    {
+      "archivo": "E07_acciones_llamar.png",
+      "titulo": "Tarjeta «Acciones»: WhatsApp, llamada y copia del teléfono del operador, repartidor y cliente (RF-16, RF-17, RF-18)"
+    },
+    {
+      "archivo": "E10_google_maps.png",
+      "titulo": "Google Maps abierto desde «Ver ubicación en mapa» con la dirección de entrega (RF-19)"
+    },
+    {
+      "archivo": "E05_registro_paquete_formulario.png",
+      "titulo": "Formulario de registro de paquete completado por el operador (RF-02)"
+    },
+    {
+      "archivo": "E05b_registro_paquete_creado.png",
+      "titulo": "Paquete registrado: el sistema genera el código de seguimiento y el estado «En Almacén» (RF-02)"
+    },
+    {
+      "archivo": "E11_paquetes_reporte.png",
+      "titulo": "Listado de paquetes con filtro por estado y descarga de reporte CSV / Excel (RF-15)"
+    },
+    {
+      "archivo": "E12_usuarios.png",
+      "titulo": "Gestión de usuarios: alta, edición y eliminación (RF-06)"
+    },
+    {
+      "archivo": "E13_clientes.png",
+      "titulo": "Gestión de clientes (RF-08)"
+    },
+    {
+      "archivo": "E14_distribuidoras.png",
+      "titulo": "Gestión de distribuidoras (RF-09)"
+    },
+    {
+      "archivo": "E15_sucursales.png",
+      "titulo": "Gestión de sucursales (RF-10)"
+    },
+    {
+      "archivo": "D04_retroceso_entregado.png",
+      "titulo": "Línea de tiempo de TM-2026-9990: el paquete «Entregado» volvió a «En Almacén» (CP-10)"
+    },
+    {
+      "archivo": "D05_entrega_sin_transito.png",
+      "titulo": "Línea de tiempo de TM-2026-4366: pasa de «En Almacén» a «Entregado» sin salir del almacén (CP-11)"
+    },
+    {
+      "archivo": "D06_operador_desasignado.png",
+      "titulo": "Paquete TM-2026-6831 sin operador después de que el Operador B quitó la asignación del Operador A (CP-43)"
+    },
+    {
+      "archivo": "D02_actividad_cliente_cambia_estado.png",
+      "titulo": "Registro de actividad (filas resaltadas): el usuario Cliente «Lucía Vargas» cambió el estado de un paquete ajeno y registró un paquete por el endpoint administrativo (CP-69, CP-70) — 2 acciones"
+    },
+    {
+      "archivo": "D07_edicion_usuario_telefono.png",
+      "titulo": "Formulario «Editar usuario»: el campo teléfono aparece vacío aunque el usuario tiene un número registrado (CP-20)"
+    },
+    {
+      "archivo": "D07b_edicion_usuario_error.png",
+      "titulo": "Para guardar cualquier cambio el administrador debe volver a digitar el teléfono (CP-20)"
+    },
+    {
+      "archivo": "D08_usuario_email_duplicado.png",
+      "titulo": "Alta de usuario con email ya registrado: tras 8 s el botón sigue en «Guardando...» porque el servidor nunca responde (CP-22)"
+    },
+    {
+      "archivo": "D09_eliminar_repartidor_con_paquetes.png",
+      "titulo": "Eliminación de un repartidor con paquetes asignados: el modal queda en «Eliminando...» sin respuesta (CP-24)"
+    },
+    {
+      "archivo": "E16_portal_mis_envios.png",
+      "titulo": "Portal del cliente: «Mis envíos» como remitente o destinatario (FD-06)"
+    },
+    {
+      "archivo": "E17_portal_enviar_paquete.png",
+      "titulo": "Portal del cliente: formulario «Enviar paquete» con cálculo de tarifa (FD-02)"
+    },
+    {
+      "archivo": "D10_portal_agregar_destinatario.png",
+      "titulo": "El portal ofrece «+ Agregar nuevo» destinatario, pero el servidor lo rechaza con «No autorizado» (CP-76)"
+    },
+    {
+      "archivo": "D11a_portal_efectivo_mensaje.png",
+      "titulo": "El portal indica «Pagarás en efectivo al momento de la entrega» (CP-80)"
+    },
+    {
+      "archivo": "D11b_portal_efectivo_pagado.png",
+      "titulo": "Sin haberse cobrado, el envío queda como «Envío pagado» (CP-80)"
+    },
+    {
+      "archivo": "D11c_panel_pago_registrado.png",
+      "titulo": "En el panel el envío figura «Pagado (efectivo)» y desaparece «Registrar pago» para el repartidor (CP-80)"
+    },
+    {
+      "archivo": "D12_destinatario_sin_envios.png",
+      "titulo": "Carlos Mendoza se registró con su DNI, pero «Mis envíos» no muestra los paquetes que ya tenía (CP-74)"
+    },
+    {
+      "archivo": "E18a_seguimiento_intento_fallido.png",
+      "titulo": "Seguimiento público de TM-2026-6226 con «Intento fallido» y el botón «Reprogramar envío» (RF-01, FD-05)"
+    },
+    {
+      "archivo": "E18_reprogramar_modal.png",
+      "titulo": "El destinatario reprograma la entrega desde el seguimiento público (FD-05)"
+    },
+    {
+      "archivo": "D13_reprogramacion_fecha_pasada.png",
+      "titulo": "La entrega quedó reprogramada para 2026-11-17 (fecha pasada) y el paquete vuelve a «En Tránsito» (CP-86)"
+    }
+  ]
+}

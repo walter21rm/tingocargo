@@ -1,0 +1,949 @@
+{
+  "modo": "memoria",
+  "base": "http://localhost:4101",
+  "fecha": "2026-11-19T04:19:13.407Z",
+  "sufijo": "1jehn",
+  "casos": [
+    {
+      "id": "CP-03",
+      "funcion": "RF-02",
+      "titulo": "Operador registra un paquete con datos completos",
+      "entrada": "Distribuidora, destinatario, sucursales origen/destino, destino, descripción, repartidor, 1.5 kg (sin operadorId)",
+      "esperado": "HTTP 201, código TM-AAAA-NNNN, estado «En Almacén» y operador autoasignado",
+      "obtenido": "HTTP 201 — código TM-2026-8182, estado «En Almacén», operadorId=9154c6a6-306e-440a-878c-2506e221a8ce",
+      "pasa": true,
+      "modo": "memoria"
+    },
+    {
+      "id": "CP-04",
+      "funcion": "RF-02",
+      "titulo": "Registro de paquete sin sucursal de destino",
+      "entrada": "Mismos datos sin sucursalDestinoId",
+      "esperado": "HTTP 400 indicando el campo obligatorio faltante",
+      "obtenido": "HTTP 400 — \"destinatarioId, sucursalOrigenId, sucursalDestinoId, destinoTexto, descripcion, operadorId y repartidorId son requeridos\"",
+      "pasa": true,
+      "modo": "memoria"
+    },
+    {
+      "id": "CP-05",
+      "funcion": "RF-02",
+      "titulo": "Tarifa automática para paquete de hasta 2 kg",
+      "entrada": "Paquete de 1.5 kg (config.json: S/ 10 hasta 2 kg)",
+      "esperado": "precioEnvio = 10",
+      "obtenido": "precioEnvio = 10",
+      "pasa": true,
+      "modo": "memoria"
+    },
+    {
+      "id": "CP-06",
+      "funcion": "RF-02",
+      "titulo": "Registro con distribuidora remitente inexistente",
+      "entrada": "remitenteId = 999999",
+      "esperado": "HTTP 400 «Remitente o cliente invalido»",
+      "obtenido": "HTTP 400 — \"Remitente o cliente invalido\"",
+      "pasa": true,
+      "modo": "memoria"
+    },
+    {
+      "id": "CP-01",
+      "funcion": "RF-01",
+      "titulo": "Consulta pública con código válido (sin autenticación)",
+      "entrada": "GET /api/tracking/TM-2026-8182 sin token",
+      "esperado": "HTTP 200 con estado actual e historial",
+      "obtenido": "HTTP 200 — estado «En Almacén», 1 registro(s) de historial",
+      "pasa": true,
+      "modo": "memoria"
+    },
+    {
+      "id": "CP-02",
+      "funcion": "RF-01",
+      "titulo": "Consulta pública con código inexistente",
+      "entrada": "GET /api/tracking/TM-1999-0000",
+      "esperado": "HTTP 404 «Código no encontrado»",
+      "obtenido": "HTTP 404 — \"Código no encontrado\"",
+      "pasa": true,
+      "modo": "memoria"
+    },
+    {
+      "id": "CP-07",
+      "funcion": "RF-03",
+      "titulo": "Operador registra la salida del paquete",
+      "entrada": "En Almacén → En Tránsito, observación «Salida registrada»",
+      "esperado": "HTTP 200 y estado «En Tránsito»",
+      "obtenido": "HTTP 200 — estado «En Tránsito»",
+      "pasa": true,
+      "modo": "memoria"
+    },
+    {
+      "id": "CP-08",
+      "funcion": "RF-03",
+      "titulo": "Cambio a un estado no definido",
+      "entrada": "estado = «Perdido»",
+      "esperado": "HTTP 400 «Estado inválido»",
+      "obtenido": "HTTP 400 — \"Estado inválido\"",
+      "pasa": true,
+      "modo": "memoria"
+    },
+    {
+      "id": "CP-09",
+      "funcion": "RF-03",
+      "titulo": "Repartidor intenta marcar «En Tránsito»",
+      "entrada": "Token del repartidor asignado, estado «En Tránsito»",
+      "esperado": "HTTP 403 (el repartidor solo registra entrega o intento fallido)",
+      "obtenido": "HTTP 403 — \"Acción no permitida\"",
+      "pasa": true,
+      "modo": "memoria"
+    },
+    {
+      "id": "CP-12",
+      "funcion": "RF-04",
+      "titulo": "Línea de tiempo cronológica del paquete",
+      "entrada": "GET /api/packages/:id tras registrar, despachar y entregar",
+      "esperado": "Historial En Almacén → En Tránsito → Entregado, fechas ascendentes",
+      "obtenido": "HTTP 200 — En Almacén → En Tránsito → Entregado (orden ascendente)",
+      "pasa": true,
+      "modo": "memoria"
+    },
+    {
+      "id": "CP-10",
+      "funcion": "RF-03",
+      "titulo": "Retroceder un paquete ya entregado",
+      "entrada": "Paquete «Entregado» → «En Almacén» (operador)",
+      "esperado": "HTTP 400/409: transición no permitida (flujo En Almacén → En Tránsito → Entregado)",
+      "obtenido": "HTTP 200 — el paquete entregado vuelve a «En Almacén»",
+      "pasa": false,
+      "modo": "memoria"
+    },
+    {
+      "id": "CP-11",
+      "funcion": "RF-03",
+      "titulo": "Repartidor confirma la entrega de un paquete que nunca salió del almacén",
+      "entrada": "Paquete «En Almacén» → «Entregado» (repartidor asignado)",
+      "esperado": "HTTP 400/409: no puede entregarse sin haber pasado por «En Tránsito»",
+      "obtenido": "HTTP 200 — estado «Entregado» sin pasar por «En Tránsito»",
+      "pasa": false,
+      "modo": "memoria"
+    },
+    {
+      "id": "CP-14",
+      "funcion": "RF-05",
+      "titulo": "Inicio de sesión válido de un usuario registrado",
+      "entrada": "Email y contraseña del operador",
+      "esperado": "HTTP 200 con token y rol «Operador logístico»",
+      "obtenido": "HTTP 200 — token emitido, rol «Operador logístico»",
+      "pasa": true,
+      "modo": "memoria"
+    },
+    {
+      "id": "CP-15",
+      "funcion": "RF-05",
+      "titulo": "Inicio de sesión con contraseña incorrecta",
+      "entrada": "Email válido, contraseña errónea",
+      "esperado": "HTTP 401 sin token",
+      "obtenido": "HTTP 401 — \"Credenciales inválidas. 4 intentos restantes.\"",
+      "pasa": true,
+      "modo": "memoria"
+    },
+    {
+      "id": "CP-16",
+      "funcion": "RF-05",
+      "titulo": "Bloqueo tras 5 intentos fallidos",
+      "entrada": "5 contraseñas erróneas y luego la contraseña correcta",
+      "esperado": "HTTP 429 en el sexto intento (cuenta bloqueada 15 min)",
+      "obtenido": "HTTP 429 — \"Demasiados intentos. Cuenta bloqueada por 15 minutos.\"",
+      "pasa": true,
+      "modo": "memoria"
+    },
+    {
+      "id": "CP-17",
+      "funcion": "RF-05",
+      "titulo": "Acceso con token inválido",
+      "entrada": "Authorization: Bearer token-falso",
+      "esperado": "HTTP 401",
+      "obtenido": "HTTP 401 — \"No autorizado\"",
+      "pasa": true,
+      "modo": "memoria"
+    },
+    {
+      "id": "CP-25",
+      "funcion": "RF-07",
+      "titulo": "Roles básicos asegurados al arrancar",
+      "entrada": "GET /api/roles",
+      "esperado": "Administrador, Operador logístico, Repartidor y Cliente",
+      "obtenido": "HTTP 200 — Administrador, Operador logístico, Repartidor, Cliente",
+      "pasa": true,
+      "modo": "memoria"
+    },
+    {
+      "id": "CP-26",
+      "funcion": "RF-07",
+      "titulo": "Crear usuario con un rol inexistente",
+      "entrada": "rolId = 999999",
+      "esperado": "HTTP 400 «Rol inválido»",
+      "obtenido": "HTTP 400 — \"Rol inválido\"",
+      "pasa": true,
+      "modo": "memoria"
+    },
+    {
+      "id": "CP-27",
+      "funcion": "RF-08",
+      "titulo": "Operador registra un cliente (persona)",
+      "entrada": "Tipo persona, DNI 40794724, teléfono PE de 9 dígitos",
+      "esperado": "HTTP 201 con teléfono en formato E.164 (+51…)",
+      "obtenido": "HTTP 201 — id cfdc04d2-0e42-4a14-8287-7675242e322d, teléfono +51999267334",
+      "pasa": true,
+      "modo": "memoria"
+    },
+    {
+      "id": "CP-28",
+      "funcion": "RF-08",
+      "titulo": "Registro de cliente con teléfono de longitud inválida",
+      "entrada": "Teléfono PE de 8 dígitos",
+      "esperado": "HTTP 400 «El telefono para Peru debe tener 9 digitos»",
+      "obtenido": "HTTP 400 — \"El telefono para Peru debe tener 9 digitos\"",
+      "pasa": true,
+      "modo": "memoria"
+    },
+    {
+      "id": "CP-29",
+      "funcion": "RF-08",
+      "titulo": "Registro de un cliente con un DNI ya registrado",
+      "entrada": "Mismo DNI 40794724 con otro nombre",
+      "esperado": "HTTP 400/409: el documento ya pertenece a un cliente (no se duplica)",
+      "obtenido": "HTTP 201 — se creó un segundo cliente (id 2cc4038c-8f3d-47f4-8cba-459fe76a321a) con el mismo DNI",
+      "pasa": false,
+      "modo": "memoria"
+    },
+    {
+      "id": "CP-30",
+      "funcion": "RF-08",
+      "titulo": "Consulta del listado de clientes",
+      "entrada": "GET /api/clients",
+      "esperado": "HTTP 200 con el cliente registrado y su documento legible",
+      "obtenido": "HTTP 200 — 7 clientes; documento del registrado: 40794724",
+      "pasa": true,
+      "modo": "memoria"
+    },
+    {
+      "id": "CP-31",
+      "funcion": "RF-09",
+      "titulo": "Administrador registra una distribuidora",
+      "entrada": "Nombre, razón social, teléfono y dirección",
+      "esperado": "HTTP 201",
+      "obtenido": "HTTP 201 — id b458b813-5754-466f-9d9a-f96191b8e123",
+      "pasa": true,
+      "modo": "memoria"
+    },
+    {
+      "id": "CP-32",
+      "funcion": "RF-09",
+      "titulo": "Operador intenta registrar una distribuidora",
+      "entrada": "Token de operador",
+      "esperado": "HTTP 403 (solo administrador)",
+      "obtenido": "HTTP 403 — \"Solo administrador\"",
+      "pasa": true,
+      "modo": "memoria"
+    },
+    {
+      "id": "CP-33",
+      "funcion": "RF-09",
+      "titulo": "Registro de distribuidora sin razón social",
+      "entrada": "razonSocial vacío",
+      "esperado": "HTTP 400",
+      "obtenido": "HTTP 400 — \"nombre, razonSocial, telefonoPais, telefonoNumero y direccion son requeridos\"",
+      "pasa": true,
+      "modo": "memoria"
+    },
+    {
+      "id": "CP-34",
+      "funcion": "RF-09",
+      "titulo": "Consulta del listado de distribuidoras",
+      "entrada": "GET /api/distributors",
+      "esperado": "HTTP 200 con la distribuidora registrada y teléfono legible",
+      "obtenido": "HTTP 200 — teléfono de la registrada: +51922565152",
+      "pasa": true,
+      "modo": "memoria"
+    },
+    {
+      "id": "CP-35",
+      "funcion": "RF-10",
+      "titulo": "Administrador registra una sucursal",
+      "entrada": "Nombre y dirección",
+      "esperado": "HTTP 201",
+      "obtenido": "HTTP 201 — id c4de303b-f9ea-4020-9366-9fc576692b6e",
+      "pasa": true,
+      "modo": "memoria"
+    },
+    {
+      "id": "CP-36",
+      "funcion": "RF-10",
+      "titulo": "Registro de sucursal sin dirección",
+      "entrada": "direccion vacía",
+      "esperado": "HTTP 400 «nombre y direccion son requeridos»",
+      "obtenido": "HTTP 400 — \"nombre y direccion son requeridos\"",
+      "pasa": true,
+      "modo": "memoria"
+    },
+    {
+      "id": "CP-37",
+      "funcion": "RF-10",
+      "titulo": "Operador intenta registrar una sucursal",
+      "entrada": "Token de operador",
+      "esperado": "HTTP 403",
+      "obtenido": "HTTP 403 — \"Solo administrador\"",
+      "pasa": true,
+      "modo": "memoria"
+    },
+    {
+      "id": "CP-38",
+      "funcion": "RF-10",
+      "titulo": "Consulta del listado de sucursales",
+      "entrada": "GET /api/branches",
+      "esperado": "HTTP 200 con la sucursal registrada y dirección legible",
+      "obtenido": "HTTP 200 — dirección de la registrada: «Av. Principal s/n, Aucayacu»",
+      "pasa": true,
+      "modo": "memoria"
+    },
+    {
+      "id": "CP-39",
+      "funcion": "RF-11",
+      "titulo": "Administrador asigna un operador",
+      "entrada": "operadorId = Operador B",
+      "esperado": "HTTP 200 con operadorId = Operador B",
+      "obtenido": "HTTP 200 — operadorId=b61d7d77-7d75-491d-b966-545ac72b25e6",
+      "pasa": true,
+      "modo": "memoria"
+    },
+    {
+      "id": "CP-40",
+      "funcion": "RF-11",
+      "titulo": "Asignar como operador a un usuario que es repartidor",
+      "entrada": "operadorId = Repartidor A",
+      "esperado": "HTTP 400 «El usuario debe ser operador logístico»",
+      "obtenido": "HTTP 400 — \"El usuario debe ser operador logístico\"",
+      "pasa": true,
+      "modo": "memoria"
+    },
+    {
+      "id": "CP-41",
+      "funcion": "RF-11",
+      "titulo": "Operador se autoasigna un paquete sin operador",
+      "entrada": "Token Operador A, operadorId = Operador A",
+      "esperado": "HTTP 200 con operadorId = Operador A",
+      "obtenido": "HTTP 200 — operadorId=9154c6a6-306e-440a-878c-2506e221a8ce",
+      "pasa": true,
+      "modo": "memoria"
+    },
+    {
+      "id": "CP-42",
+      "funcion": "RF-11",
+      "titulo": "Operador intenta asignar el paquete a otro operador",
+      "entrada": "Token Operador A, operadorId = Operador B",
+      "esperado": "HTTP 403 «Solo puedes asignarte a ti mismo»",
+      "obtenido": "HTTP 403 — \"Solo puedes asignarte a ti mismo\"",
+      "pasa": true,
+      "modo": "memoria"
+    },
+    {
+      "id": "CP-43",
+      "funcion": "RF-11",
+      "titulo": "Operador B quita la asignación de un paquete del Operador A",
+      "entrada": "Token Operador B, operadorId = null sobre un paquete del Operador A",
+      "esperado": "HTTP 403: un operador solo puede autoasignarse, no desasignar a otro",
+      "obtenido": "HTTP 200 — el paquete queda sin operador (operadorId=null)",
+      "pasa": false,
+      "modo": "memoria"
+    },
+    {
+      "id": "CP-44",
+      "funcion": "RF-12",
+      "titulo": "Operador del paquete asigna otro repartidor",
+      "entrada": "repartidorId = Repartidor B",
+      "esperado": "HTTP 200 con repartidorId = Repartidor B",
+      "obtenido": "HTTP 200 — repartidorId=f5c7ce74-0069-4379-8838-9b5f07769fb1",
+      "pasa": true,
+      "modo": "memoria"
+    },
+    {
+      "id": "CP-45",
+      "funcion": "RF-12",
+      "titulo": "Asignar como repartidor a un operador",
+      "entrada": "repartidorId = Operador B",
+      "esperado": "HTTP 400 «El usuario debe ser repartidor»",
+      "obtenido": "HTTP 400 — \"El usuario debe ser repartidor\"",
+      "pasa": true,
+      "modo": "memoria"
+    },
+    {
+      "id": "CP-46",
+      "funcion": "RF-12",
+      "titulo": "Operador ajeno al paquete intenta asignar repartidor",
+      "entrada": "Token Operador B sobre paquete del Operador A",
+      "esperado": "HTTP 403",
+      "obtenido": "HTTP 403 — \"Solo puedes asignar repartidor a paquetes donde eres el operador\"",
+      "pasa": true,
+      "modo": "memoria"
+    },
+    {
+      "id": "CP-47",
+      "funcion": "RF-13",
+      "titulo": "Repartidor consulta «Mis entregas»",
+      "entrada": "GET /api/couriers/me/packages con token del Repartidor A",
+      "esperado": "HTTP 200 solo con paquetes asignados al Repartidor A",
+      "obtenido": "HTTP 200 — 3 paquetes, todos del Repartidor A",
+      "pasa": true,
+      "modo": "memoria"
+    },
+    {
+      "id": "CP-48",
+      "funcion": "RF-13",
+      "titulo": "Operador intenta usar la vista «Mis entregas»",
+      "entrada": "GET /api/couriers/me/packages con token de operador",
+      "esperado": "HTTP 403",
+      "obtenido": "HTTP 403 — \"No autorizado\"",
+      "pasa": true,
+      "modo": "memoria"
+    },
+    {
+      "id": "CP-49",
+      "funcion": "RF-13",
+      "titulo": "Repartidor intenta ver un paquete que no tiene asignado",
+      "entrada": "Token Repartidor A sobre paquete del Repartidor B",
+      "esperado": "HTTP 403",
+      "obtenido": "HTTP 403 — \"No autorizado\"",
+      "pasa": true,
+      "modo": "memoria"
+    },
+    {
+      "id": "CP-51",
+      "funcion": "RF-14",
+      "titulo": "Repartidor registra un intento fallido con observación",
+      "entrada": "Paquete «En Tránsito», observación «Cliente ausente»",
+      "esperado": "HTTP 200, estado «Intento fallido» y observación en el historial",
+      "obtenido": "HTTP 200 — estado «Intento fallido», última observación «Cliente ausente»",
+      "pasa": true,
+      "modo": "memoria"
+    },
+    {
+      "id": "CP-52",
+      "funcion": "RF-14",
+      "titulo": "Repartidor no asignado intenta registrar un intento fallido",
+      "entrada": "Token Repartidor B sobre paquete del Repartidor A",
+      "esperado": "HTTP 403",
+      "obtenido": "HTTP 403 — \"No autorizado\"",
+      "pasa": true,
+      "modo": "memoria"
+    },
+    {
+      "id": "CP-13",
+      "funcion": "RF-04",
+      "titulo": "Seguimiento público muestra el historial con observaciones",
+      "entrada": "GET /api/tracking/TM-2026-1378",
+      "esperado": "Historial con «Intento fallido» y la observación «Cliente ausente»",
+      "obtenido": "HTTP 200 — último registro «Intento fallido» / «Cliente ausente»",
+      "pasa": true,
+      "modo": "memoria"
+    },
+    {
+      "id": "CP-53",
+      "funcion": "RF-15",
+      "titulo": "Administrador descarga el reporte CSV",
+      "entrada": "GET /api/reports/packages?format=csv",
+      "esperado": "HTTP 200, text/csv con cabeceras y los paquetes registrados",
+      "obtenido": "HTTP 200 — text/csv; charset=utf-8, 6 filas de datos",
+      "pasa": true,
+      "modo": "memoria"
+    },
+    {
+      "id": "CP-54",
+      "funcion": "RF-15",
+      "titulo": "Administrador descarga el reporte Excel (.xlsx)",
+      "entrada": "GET /api/reports/packages?format=xlsx",
+      "esperado": "HTTP 200 con un libro Excel válido",
+      "obtenido": "HTTP 200 — 25345 bytes, firma XLSX válida",
+      "pasa": true,
+      "modo": "memoria"
+    },
+    {
+      "id": "CP-55",
+      "funcion": "RF-15",
+      "titulo": "Operador intenta descargar el reporte",
+      "entrada": "Token de operador",
+      "esperado": "HTTP 403 (solo administrador)",
+      "obtenido": "HTTP 403 — \"Solo administrador\"",
+      "pasa": true,
+      "modo": "memoria"
+    },
+    {
+      "id": "CP-56",
+      "funcion": "RF-15",
+      "titulo": "Reporte en formato no soportado",
+      "entrada": "format=pdf",
+      "esperado": "HTTP 400 «Formato no soportado»",
+      "obtenido": "HTTP 400 — \"Formato no soportado\"",
+      "pasa": true,
+      "modo": "memoria"
+    },
+    {
+      "id": "CP-57",
+      "funcion": "RF-16",
+      "titulo": "El detalle del paquete entrega el teléfono del operador asignado",
+      "entrada": "GET /api/packages/:id (paquete del Operador A)",
+      "esperado": "operador.telefono = +51944019873",
+      "obtenido": "operador.telefono = +51944019873",
+      "pasa": true,
+      "modo": "memoria"
+    },
+    {
+      "id": "CP-59",
+      "funcion": "RF-17",
+      "titulo": "El detalle del paquete entrega el teléfono del repartidor asignado",
+      "entrada": "GET /api/packages/:id (paquete del Repartidor A)",
+      "esperado": "repartidor.telefono = +51951563946",
+      "obtenido": "repartidor.telefono = +51951563946",
+      "pasa": true,
+      "modo": "memoria"
+    },
+    {
+      "id": "CP-61",
+      "funcion": "RF-18",
+      "titulo": "El detalle del paquete entrega el teléfono del cliente destinatario",
+      "entrada": "GET /api/packages/:id",
+      "esperado": "destinatario.telefono = +51943279741",
+      "obtenido": "destinatario.telefono = +51943279741",
+      "pasa": true,
+      "modo": "memoria"
+    },
+    {
+      "id": "CP-65",
+      "funcion": "RF-20",
+      "titulo": "Ruta protegida sin token",
+      "entrada": "GET /api/packages sin Authorization",
+      "esperado": "HTTP 401",
+      "obtenido": "HTTP 401 — \"No autorizado\"",
+      "pasa": true,
+      "modo": "memoria"
+    },
+    {
+      "id": "CP-66",
+      "funcion": "RF-20",
+      "titulo": "Operador intenta listar usuarios",
+      "entrada": "GET /api/users con token de operador",
+      "esperado": "HTTP 403 «Solo administrador»",
+      "obtenido": "HTTP 403 — \"Solo administrador\"",
+      "pasa": true,
+      "modo": "memoria"
+    },
+    {
+      "id": "CP-67",
+      "funcion": "RF-20",
+      "titulo": "Repartidor intenta registrar un paquete",
+      "entrada": "POST /api/packages con token de repartidor",
+      "esperado": "HTTP 403",
+      "obtenido": "HTTP 403 — \"No autorizado\"",
+      "pasa": true,
+      "modo": "memoria"
+    },
+    {
+      "id": "CP-68",
+      "funcion": "RF-20",
+      "titulo": "Cliente intenta ver el detalle de un paquete ajeno",
+      "entrada": "GET /api/packages/:id con token de cliente",
+      "esperado": "HTTP 403",
+      "obtenido": "HTTP 403 — \"No autorizado\"",
+      "pasa": true,
+      "modo": "memoria"
+    },
+    {
+      "id": "CP-69",
+      "funcion": "RF-20",
+      "titulo": "Cliente cambia el estado de un paquete ajeno a «Entregado»",
+      "entrada": "PATCH /api/packages/:id/status con token de cliente (paquete de otro destinatario)",
+      "esperado": "HTTP 403: el cliente no puede modificar estados",
+      "obtenido": "HTTP 200 — el paquete TM-2026-8131 queda «Entregado»",
+      "pasa": false,
+      "modo": "memoria"
+    },
+    {
+      "id": "CP-70",
+      "funcion": "RF-20",
+      "titulo": "Cliente registra un paquete por el endpoint administrativo",
+      "entrada": "POST /api/packages (distribuidora → cliente) con token de cliente",
+      "esperado": "HTTP 403 (registro reservado a Administrador y Operador)",
+      "obtenido": "HTTP 201 — paquete TM-2026-3358 creado a nombre de la distribuidora",
+      "pasa": false,
+      "modo": "memoria"
+    },
+    {
+      "id": "CP-72",
+      "funcion": "FD-01",
+      "titulo": "Autoregistro de un cliente nuevo en el portal",
+      "entrada": "Nombre, email, contraseña, teléfono, DNI nuevo, dirección",
+      "esperado": "HTTP 201 con token, rol «Cliente» y clienteId",
+      "obtenido": "HTTP 201 — rol «Cliente», clienteId=aaa7f43c-d260-4b68-86d1-4bbe4cc32f7d",
+      "pasa": true,
+      "modo": "memoria"
+    },
+    {
+      "id": "CP-73",
+      "funcion": "FD-01",
+      "titulo": "Autoregistro con un email ya registrado",
+      "entrada": "Email de un cliente existente",
+      "esperado": "HTTP 400 «El email ya está registrado»",
+      "obtenido": "HTTP 400 — \"El email ya está registrado\"",
+      "pasa": true,
+      "modo": "memoria"
+    },
+    {
+      "id": "CP-74",
+      "funcion": "FD-01",
+      "titulo": "Destinatario que ya recibió envíos se registra con su DNI",
+      "entrada": "DNI de Carlos Mendoza (cliente con paquetes registrados por el operador)",
+      "esperado": "La cuenta se vincula al cliente existente y «Mis envíos» muestra sus paquetes",
+      "obtenido": "Vinculado al cliente c7d03fdf-b241-446e-ab0c-83e3d923cdd9; «Mis envíos» muestra 6 paquete(s)",
+      "pasa": true,
+      "modo": "memoria"
+    },
+    {
+      "id": "CP-75",
+      "funcion": "FD-02",
+      "titulo": "Cliente registra un envío a un destinatario existente",
+      "entrada": "Destinatario existente, sucursales, 1 kg, paga el remitente",
+      "esperado": "HTTP 201, tipo «cliente_cliente», precio S/ 10",
+      "obtenido": "HTTP 201 — TM-2026-4188, tipo cliente_cliente, precio 10",
+      "pasa": true,
+      "modo": "memoria"
+    },
+    {
+      "id": "CP-76",
+      "funcion": "FD-02",
+      "titulo": "Cliente agrega un destinatario nuevo desde «Enviar paquete»",
+      "entrada": "POST /api/clients con token de cliente (botón «+ Agregar nuevo» del portal)",
+      "esperado": "HTTP 201: el destinatario queda disponible para el envío",
+      "obtenido": "HTTP 403 — \"No autorizado\"",
+      "pasa": false,
+      "modo": "memoria"
+    },
+    {
+      "id": "CP-77",
+      "funcion": "FD-02",
+      "titulo": "Cliente intenta enviarse un paquete a sí mismo",
+      "entrada": "destinatarioId = clienteId propio",
+      "esperado": "HTTP 400 «El destinatario debe ser diferente al remitente»",
+      "obtenido": "HTTP 400 — \"El destinatario debe ser diferente al remitente\"",
+      "pasa": true,
+      "modo": "memoria"
+    },
+    {
+      "id": "CP-78",
+      "funcion": "FD-03",
+      "titulo": "Cliente intenta pagar un envío que no le corresponde",
+      "entrada": "PATCH /api/client/packages/:id/pagar sobre un paquete ajeno (paga el remitente)",
+      "esperado": "HTTP 403 «Solo el remitente puede pagar este paquete»",
+      "obtenido": "HTTP 403 — \"Solo el remitente puede pagar este paquete\"",
+      "pasa": true,
+      "modo": "memoria"
+    },
+    {
+      "id": "CP-79",
+      "funcion": "FD-03",
+      "titulo": "Cliente intenta pagar un envío de más de 2 kg sin precio asignado",
+      "entrada": "Envío propio de 3 kg (precio pendiente de asignar por el operador)",
+      "esperado": "HTTP 400 «El operador debe asignar el precio antes de pagar»",
+      "obtenido": "HTTP 400 — \"El operador debe asignar el precio antes de pagar (paquete > 2 kg)\"",
+      "pasa": true,
+      "modo": "memoria"
+    },
+    {
+      "id": "CP-81",
+      "funcion": "FD-04",
+      "titulo": "Repartidor registra el pago en efectivo al entregar",
+      "entrada": "PATCH /registrar-pago-destino, método efectivo",
+      "esperado": "HTTP 200, pagado = true, método «efectivo»",
+      "obtenido": "HTTP 200 — pagado=true, método=efectivo",
+      "pasa": true,
+      "modo": "memoria"
+    },
+    {
+      "id": "CP-82",
+      "funcion": "FD-04",
+      "titulo": "Intento de registrar dos veces el mismo pago",
+      "entrada": "Segundo registro sobre el paquete ya pagado",
+      "esperado": "HTTP 400 «El paquete ya está pagado»",
+      "obtenido": "HTTP 400 — \"El paquete ya está pagado\"",
+      "pasa": true,
+      "modo": "memoria"
+    },
+    {
+      "id": "CP-83",
+      "funcion": "FD-04",
+      "titulo": "Repartidor no asignado intenta registrar el pago",
+      "entrada": "Token del Repartidor B sobre un paquete del Repartidor A",
+      "esperado": "HTTP 403 «Solo el repartidor asignado puede registrar el pago»",
+      "obtenido": "HTTP 403 — \"Solo el repartidor asignado puede registrar el pago\"",
+      "pasa": true,
+      "modo": "memoria"
+    },
+    {
+      "id": "CP-80",
+      "funcion": "FD-03",
+      "titulo": "Cliente elige «Efectivo: pagarás al momento de la entrega»",
+      "entrada": "PATCH /api/client/packages/:id/pagar con metodoPago «efectivo» (lo que envía el portal)",
+      "esperado": "El envío queda pendiente de cobro (pagado = false) hasta que el repartidor reciba el dinero",
+      "obtenido": "HTTP 200 — pagado=true, método=efectivo sin haberse cobrado",
+      "pasa": false,
+      "modo": "memoria"
+    },
+    {
+      "id": "CP-84",
+      "funcion": "FD-05",
+      "titulo": "Destinatario reprograma la entrega desde el seguimiento público",
+      "entrada": "Paquete con intento fallido, fecha 2026-11-19, 09:00–12:00, nueva dirección",
+      "esperado": "HTTP 200, estado «En Tránsito», fecha guardada y registro «Reprogramado para entrega»",
+      "obtenido": "HTTP 200 — estado «En Tránsito», fecha 2026-11-19, «Reprogramado para entrega»",
+      "pasa": true,
+      "modo": "memoria"
+    },
+    {
+      "id": "CP-85",
+      "funcion": "FD-05",
+      "titulo": "Reprogramar un paquete que no tuvo intento fallido",
+      "entrada": "Paquete «En Almacén»",
+      "esperado": "HTTP 400 «Solo se puede reprogramar un paquete con estado Intento fallido»",
+      "obtenido": "HTTP 400 — \"Solo se puede reprogramar un paquete con estado Intento fallido\"",
+      "pasa": true,
+      "modo": "memoria"
+    },
+    {
+      "id": "CP-86",
+      "funcion": "FD-05",
+      "titulo": "Reprogramar la entrega para una fecha pasada",
+      "entrada": "fecha = 2026-11-17 (ayer)",
+      "esperado": "HTTP 400: la nueva fecha debe ser hoy o posterior",
+      "obtenido": "HTTP 200 — reprogramado para 2026-11-17 y estado «En Tránsito»",
+      "pasa": false,
+      "modo": "memoria"
+    },
+    {
+      "id": "CP-87",
+      "funcion": "FD-05",
+      "titulo": "Reprogramar con hora de fin anterior a la de inicio",
+      "entrada": "fecha 2026-11-19, horaInicio 15:00, horaFin 09:00",
+      "esperado": "HTTP 400: rango horario inválido",
+      "obtenido": "HTTP 200 — ventana guardada 15:00–09:00",
+      "pasa": false,
+      "modo": "memoria"
+    },
+    {
+      "id": "CP-89",
+      "funcion": "FD-06",
+      "titulo": "Cliente consulta «Mis envíos»",
+      "entrada": "GET /api/client/me/packages",
+      "esperado": "HTTP 200 con sus envíos (como remitente o destinatario) y ninguno ajeno",
+      "obtenido": "HTTP 200 — 2 envío(s), todos propios",
+      "pasa": true,
+      "modo": "memoria"
+    },
+    {
+      "id": "CP-90",
+      "funcion": "FD-06",
+      "titulo": "Cliente ve el detalle y la línea de tiempo de su envío",
+      "entrada": "GET /api/packages/:id del envío propio",
+      "esperado": "HTTP 200 con historial",
+      "obtenido": "HTTP 200 — 1 registro(s) de historial",
+      "pasa": true,
+      "modo": "memoria"
+    },
+    {
+      "id": "CP-18",
+      "funcion": "RF-06",
+      "titulo": "Administrador crea un repartidor con placa y vehículo",
+      "entrada": "Nombre, email, teléfono, rol Repartidor, sucursal, contraseña, placa, vehículo",
+      "esperado": "HTTP 201 sin exponer la contraseña ni su hash",
+      "obtenido": "HTTP 201 — id c4e13971-1760-444b-92c9-bc7b0ae55cc7, sin hash",
+      "pasa": true,
+      "modo": "memoria"
+    },
+    {
+      "id": "CP-19",
+      "funcion": "RF-06",
+      "titulo": "Datos del usuario para el formulario de edición",
+      "entrada": "GET /api/users/:id del Repartidor A",
+      "esperado": "Teléfono legible en formato E.164 (+51951563946)",
+      "obtenido": "HTTP 200 — telefono = «+51951563946»",
+      "pasa": true,
+      "modo": "memoria"
+    },
+    {
+      "id": "CP-21",
+      "funcion": "RF-06",
+      "titulo": "Administrador edita el nombre de un usuario",
+      "entrada": "PUT /api/users/:id con nombre nuevo",
+      "esperado": "HTTP 200 con el nombre actualizado",
+      "obtenido": "HTTP 200 — nombre «Raúl Cárdenas Soto»",
+      "pasa": true,
+      "modo": "memoria"
+    },
+    {
+      "id": "CP-22",
+      "funcion": "RF-06",
+      "titulo": "Crear un usuario con un email ya registrado",
+      "entrada": "email = operador.a.1jehn@tingocargo.pe",
+      "esperado": "HTTP 400/409 con mensaje «email ya registrado»",
+      "obtenido": "HTTP 201 — se creó un segundo usuario con el mismo email (id 6af250c7-436c-4add-bba1-4b7a9ec11f85)",
+      "pasa": false,
+      "modo": "memoria"
+    },
+    {
+      "id": "CP-23",
+      "funcion": "RF-06",
+      "titulo": "Eliminar un usuario sin paquetes",
+      "entrada": "DELETE /api/users/:id (repartidor recién creado)",
+      "esperado": "HTTP 200 { ok: true }",
+      "obtenido": "HTTP 200",
+      "pasa": true,
+      "modo": "memoria"
+    },
+    {
+      "id": "CP-24",
+      "funcion": "RF-06",
+      "titulo": "Eliminar un repartidor que tiene paquetes asignados",
+      "entrada": "DELETE /api/users/:id del Repartidor B (tiene un paquete asignado)",
+      "esperado": "Respuesta controlada (HTTP 400/409 con mensaje) sin dejar paquetes inconsistentes",
+      "obtenido": "HTTP 200 — usuario eliminado; el paquete TM-2026-6562 queda con repartidor «inexistente»",
+      "pasa": false,
+      "modo": "memoria"
+    }
+  ],
+  "fixtures": {
+    "sufijo": "1jehn",
+    "admin": {
+      "usuario": "wruizmarin21@gmail.com",
+      "password": "wally21"
+    },
+    "operadorA": {
+      "email": "operador.a.1jehn@tingocargo.pe",
+      "password": "Clave2026",
+      "id": "9154c6a6-306e-440a-878c-2506e221a8ce",
+      "nombre": "Ana Torres"
+    },
+    "operadorB": {
+      "email": "operador.b.1jehn@tingocargo.pe",
+      "password": "Clave2026",
+      "id": "b61d7d77-7d75-491d-b966-545ac72b25e6"
+    },
+    "repartidorA": {
+      "email": "repartidor.a.1jehn@tingocargo.pe",
+      "password": "Clave2026",
+      "id": "0c1cb315-f7bf-4143-8b71-7772515a036c",
+      "nombre": "Pedro Quispe"
+    },
+    "clientePortal": {
+      "email": "lucia.1jehn@correo.pe",
+      "password": "Clave2026",
+      "clienteId": "3b9c7b53-df29-4159-a8f4-780b71079ca0"
+    },
+    "repartidorB": {
+      "email": "repartidor.b.1jehn@tingocargo.pe",
+      "password": "Clave2026",
+      "id": "f5c7ce74-0069-4379-8838-9b5f07769fb1"
+    },
+    "sucursalOrigen": {
+      "id": "0a973c1b-e226-4909-9aa7-9f1ec09f38ab",
+      "nombre": "Tingo María - Centro",
+      "direccion": "Av. Raimondi 123, Tingo María"
+    },
+    "sucursalDestino": {
+      "id": "d6032c90-edf4-4bbf-a31b-8e0f8818e193",
+      "nombre": "Tingo María - Norte",
+      "direccion": "Jr. Monzón 456, Tingo María"
+    },
+    "distribuidora": {
+      "id": "d440fdaf-300a-4ad5-b879-2f365872ae29",
+      "nombre": "DIMEXA",
+      "razonSocial": "Distribuidora de Medicamentos S.A.",
+      "telefono": "+51914013524",
+      "direccion": "Av. Ejemplo 123, Tingo María"
+    },
+    "roles": {
+      "operador": "r2",
+      "repartidor": "r3",
+      "cliente": "r4",
+      "admin": "r1"
+    },
+    "clienteC2": {
+      "id": "4c0313ba-571c-4f36-87f5-f8fb9777d421",
+      "tipo": "persona",
+      "nombre": "María Flores",
+      "documento": "46625710",
+      "telefono": "+51966184322",
+      "email": "maria.1jehn@correo.pe",
+      "direccion": "Jr. Callao 456, Tingo María"
+    },
+    "clienteC1": {
+      "id": "c7d03fdf-b241-446e-ab0c-83e3d923cdd9",
+      "tipo": "persona",
+      "nombre": "Carlos Mendoza",
+      "documento": "40481236",
+      "telefono": "+51943279741",
+      "email": "carlos.1jehn@correo.pe",
+      "direccion": "Jr. Callao 456, Tingo María"
+    },
+    "clienteC1Portal": {
+      "email": "carlos.portal.1jehn@correo.pe",
+      "password": "Clave2026",
+      "clienteId": "c7d03fdf-b241-446e-ab0c-83e3d923cdd9"
+    },
+    "clienteNuevo": {
+      "id": "cfdc04d2-0e42-4a14-8287-7675242e322d",
+      "tipo": "persona",
+      "nombre": "Julio Ramos",
+      "documento": "40794724",
+      "telefono": "+51999267334",
+      "email": "pedro.1jehn@correo.pe",
+      "direccion": "Jr. Huallaga 321, Tingo María"
+    },
+    "paquetes": {
+      "p1": {
+        "id": "eca7ca74-cd5a-40ea-a720-5ed26fa31a9d",
+        "codigo": "TM-2026-8182"
+      },
+      "p2": {
+        "id": "c55916f1-6705-4942-a550-7231ec1f16ca",
+        "codigo": "TM-2026-7258"
+      },
+      "p3": {
+        "id": "9175dc1b-7b4f-463a-ab43-1752674fb7d7",
+        "codigo": "TM-2026-5130"
+      },
+      "p4": {
+        "id": "57a7f33a-4f5f-4b88-8344-70b2cb3a9503",
+        "codigo": "TM-2026-6562"
+      },
+      "p5": {
+        "id": "2dfa1acb-a9d4-44b2-8595-ab57050c9377",
+        "codigo": "TM-2026-1378"
+      },
+      "p6": {
+        "id": "5cf74d65-f6f7-4c1f-b87e-81adc8b56caa",
+        "codigo": "TM-2026-3790"
+      },
+      "p7": {
+        "id": "cdc68f4a-bd29-4876-94fd-1239f12f1764",
+        "codigo": "TM-2026-7947"
+      },
+      "p8": {
+        "id": "1d6a64d8-0ce5-4dc1-89f5-629d005af3ba",
+        "codigo": "TM-2026-8131"
+      },
+      "p9": {
+        "id": "41840fea-d8e3-4735-8fc4-8feab7c88d15",
+        "codigo": "TM-2026-6308"
+      },
+      "envioCliente": {
+        "id": "bc2a2633-8d4a-4181-a008-a2a19093fefa",
+        "codigo": "TM-2026-4188"
+      }
+    }
+  }
+}

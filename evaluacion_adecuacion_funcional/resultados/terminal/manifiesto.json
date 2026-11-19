@@ -1,0 +1,42 @@
+[
+  {
+    "html": "/workspace/evaluacion_adecuacion_funcional/resultados/terminal/T01_suite_existente.html",
+    "png": "/workspace/evaluacion_adecuacion_funcional/capturas/T01_suite_existente.png",
+    "ancho": 900
+  },
+  {
+    "html": "/workspace/evaluacion_adecuacion_funcional/resultados/terminal/T02_api_postgresql_fallas.html",
+    "png": "/workspace/evaluacion_adecuacion_funcional/capturas/T02_api_postgresql_fallas.png",
+    "ancho": 1180
+  },
+  {
+    "html": "/workspace/evaluacion_adecuacion_funcional/resultados/terminal/T03_api_memoria_fallas.html",
+    "png": "/workspace/evaluacion_adecuacion_funcional/capturas/T03_api_memoria_fallas.png",
+    "ancho": 1180
+  },
+  {
+    "html": "/workspace/evaluacion_adecuacion_funcional/resultados/terminal/T04_api_postgresql_matriz.html",
+    "png": "/workspace/evaluacion_adecuacion_funcional/capturas/T04_api_postgresql_matriz.png",
+    "ancho": 1000
+  },
+  {
+    "html": "/workspace/evaluacion_adecuacion_funcional/resultados/terminal/T05_ui_postgresql.html",
+    "png": "/workspace/evaluacion_adecuacion_funcional/capturas/T05_ui_postgresql.png",
+    "ancho": 1180
+  },
+  {
+    "html": "/workspace/evaluacion_adecuacion_funcional/resultados/terminal/T06_log_servidor.html",
+    "png": "/workspace/evaluacion_adecuacion_funcional/capturas/T06_log_servidor.png",
+    "ancho": 1180
+  },
+  {
+    "html": "/workspace/evaluacion_adecuacion_funcional/resultados/terminal/T07_observaciones.html",
+    "png": "/workspace/evaluacion_adecuacion_funcional/capturas/T07_observaciones.png",
+    "ancho": 1180
+  },
+  {
+    "html": "/workspace/evaluacion_adecuacion_funcional/resultados/terminal/T08_dni_duplicado.html",
+    "png": "/workspace/evaluacion_adecuacion_funcional/capturas/T08_dni_duplicado.png",
+    "ancho": 1000
+  }
+]

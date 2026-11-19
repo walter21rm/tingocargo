@@ -1,0 +1,288 @@
+
+> logistica-backend@1.0.0 test
+> cross-env NODE_ENV=test node --test
+
+TAP version 13
+# Subtest: API logística
+    # Subtest: login con admin env retorna token
+    ok 1 - login con admin env retorna token
+      ---
+      duration_ms: 54.629562
+      type: 'test'
+      ...
+    # Subtest: login inválido retorna 401
+    ok 2 - login inválido retorna 401
+      ---
+      duration_ms: 5.138632
+      type: 'test'
+      ...
+    # Subtest: tracking público retorna historial
+    ok 3 - tracking público retorna historial
+      ---
+      duration_ms: 2.964335
+      type: 'test'
+      ...
+    # Subtest: requiere auth para listar paquetes
+    ok 4 - requiere auth para listar paquetes
+      ---
+      duration_ms: 2.96747
+      type: 'test'
+      ...
+    # Subtest: lista paquetes con token
+    ok 5 - lista paquetes con token
+      ---
+      duration_ms: 3.327339
+      type: 'test'
+      ...
+    # Subtest: crea usuarios operador y repartidor
+    ok 6 - crea usuarios operador y repartidor
+      ---
+      duration_ms: 157.469779
+      type: 'test'
+      ...
+    # Subtest: login de operador y repartidor
+    ok 7 - login de operador y repartidor
+      ---
+      duration_ms: 131.115349
+      type: 'test'
+      ...
+    # Subtest: crea cliente y distribuidora
+    ok 8 - crea cliente y distribuidora
+      ---
+      duration_ms: 4.425048
+      type: 'test'
+      ...
+    # Subtest: crear paquete asigna operador automáticamente
+    ok 9 - crear paquete asigna operador automáticamente
+      ---
+      duration_ms: 3.402534
+      type: 'test'
+      ...
+    # Subtest: crear paquete con repartidor asignado
+    ok 10 - crear paquete con repartidor asignado
+      ---
+      duration_ms: 3.462806
+      type: 'test'
+      ...
+    # Subtest: crear paquete cliente a cliente
+    ok 11 - crear paquete cliente a cliente
+      ---
+      duration_ms: 7.127586
+      type: 'test'
+      ...
+    # Subtest: repartidor ve solo sus entregas
+    ok 12 - repartidor ve solo sus entregas
+      ---
+      duration_ms: 2.20458
+      type: 'test'
+      ...
+    # Subtest: repartidor no puede crear paquetes
+    ok 13 - repartidor no puede crear paquetes
+      ---
+      duration_ms: 1.988557
+      type: 'test'
+      ...
+    # Subtest: repartidor puede marcar entrega y no puede En Tránsito
+    ok 14 - repartidor puede marcar entrega y no puede En Tránsito
+      ---
+      duration_ms: 3.677744
+      type: 'test'
+      ...
+    # Subtest: lista roles, sucursales y operadores/repartidores
+    ok 15 - lista roles, sucursales y operadores/repartidores
+      ---
+      duration_ms: 5.885431
+      type: 'test'
+      ...
+    # Subtest: descarga reportes CSV y XLSX
+    ok 16 - descarga reportes CSV y XLSX
+      ---
+      duration_ms: 20.983978
+      type: 'test'
+      ...
+    # Subtest: edita y elimina usuario
+    ok 17 - edita y elimina usuario
+      ---
+      duration_ms: 3.910494
+      type: 'test'
+      ...
+    # Subtest: elimina repartidor de prueba
+    ok 18 - elimina repartidor de prueba
+      ---
+      duration_ms: 1.713342
+      type: 'test'
+      ...
+    1..18
+ok 1 - API logística
+  ---
+  duration_ms: 651.48384
+  type: 'suite'
+  ...
+# Subtest: Pruebas de concurrencia API logística
+    # Subtest: concurrencia de login admin (30 requests paralelos)
+    ok 1 - concurrencia de login admin (30 requests paralelos)
+      ---
+      duration_ms: 142.358419
+      type: 'test'
+      ...
+    # Subtest: concurrencia de tracking público (50 requests paralelos)
+    ok 2 - concurrencia de tracking público (50 requests paralelos)
+      ---
+      duration_ms: 40.927084
+      type: 'test'
+      ...
+    # Subtest: concurrencia en listado autenticado de paquetes (40 requests paralelos)
+    ok 3 - concurrencia en listado autenticado de paquetes (40 requests paralelos)
+      ---
+      duration_ms: 24.233629
+      type: 'test'
+      ...
+    # Subtest: prepara operador y repartidor para pruebas concurrentes
+    ok 4 - prepara operador y repartidor para pruebas concurrentes
+      ---
+      duration_ms: 139.633721
+      type: 'test'
+      ...
+    # Subtest: concurrencia de creación de paquetes (200 requests paralelos)
+    ok 5 - concurrencia de creación de paquetes (200 requests paralelos)
+      ---
+      duration_ms: 293.063025
+      type: 'test'
+      ...
+    # Subtest: concurrencia de actualización de estado en paquetes creados
+    ok 6 - concurrencia de actualización de estado en paquetes creados
+      ---
+      duration_ms: 141.158063
+      type: 'test'
+      ...
+    1..6
+ok 2 - Pruebas de concurrencia API logística
+  ---
+  duration_ms: 1046.835823
+  type: 'suite'
+  ...
+# Subtest: Requisitos no funcionales
+    # Subtest: RNF01 disponibilidad
+    ok 1 - RNF01 disponibilidad
+      ---
+      duration_ms: 14.960777
+      type: 'test'
+      ...
+    # Subtest: RNF02 seguridad de acceso
+    ok 2 - RNF02 seguridad de acceso
+      ---
+      duration_ms: 36.349641
+      type: 'test'
+      ...
+    # Subtest: RNF03 confidencialidad
+    ok 3 - RNF03 confidencialidad
+      ---
+      duration_ms: 114.673355
+      type: 'test'
+      ...
+    # Subtest: RNF04 integridad
+    ok 4 - RNF04 integridad
+      ---
+      duration_ms: 8.302941
+      type: 'test'
+      ...
+    # Subtest: RNF05 rendimiento
+    ok 5 - RNF05 rendimiento
+      ---
+      duration_ms: 180.837836
+      type: 'test'
+      ...
+    # Subtest: RNF06 escalabilidad
+    ok 6 - RNF06 escalabilidad
+      ---
+      duration_ms: 371.294215
+      type: 'test'
+      ...
+    # Subtest: RNF07 usabilidad
+    ok 7 - RNF07 usabilidad
+      ---
+      duration_ms: 2.016192
+      type: 'test'
+      ...
+    # Subtest: RNF08 compatibilidad
+    ok 8 - RNF08 compatibilidad
+      ---
+      duration_ms: 0.363348
+      type: 'test'
+      ...
+    # Subtest: RNF09 portabilidad
+    ok 9 - RNF09 portabilidad
+      ---
+      duration_ms: 0.322109
+      type: 'test'
+      ...
+    # Subtest: RNF10 auditoria
+    ok 10 - RNF10 auditoria
+      ---
+      duration_ms: 4.062766
+      type: 'test'
+      ...
+    # Subtest: RNF11 respaldo
+    ok 11 - RNF11 respaldo
+      ---
+      duration_ms: 0.342609
+      type: 'test'
+      ...
+    # Subtest: RNF12 mantenibilidad
+    ok 12 - RNF12 mantenibilidad
+      ---
+      duration_ms: 1.592189
+      type: 'test'
+      ...
+    # Subtest: RNF13 confiabilidad
+    ok 13 - RNF13 confiabilidad
+      ---
+      duration_ms: 2.620598
+      type: 'test'
+      ...
+    # Subtest: RNF14 zona horaria
+    ok 14 - RNF14 zona horaria
+      ---
+      duration_ms: 1.827459
+      type: 'test'
+      ...
+    1..14
+ok 3 - Requisitos no funcionales
+  ---
+  duration_ms: 1172.870139
+  type: 'suite'
+  ...
+# Subtest: SLA y volumen
+    # Subtest: 100 lecturas concurrentes responden en menos de 3 segundos
+    ok 1 - 100 lecturas concurrentes responden en menos de 3 segundos
+      ---
+      duration_ms: 196.16459
+      type: 'test'
+      ...
+    # Subtest: 10.000 envíos se consultan por página en menos de 3 segundos
+    ok 2 - 10.000 envíos se consultan por página en menos de 3 segundos
+      ---
+      duration_ms: 370.342953
+      type: 'test'
+      ...
+    # Subtest: la sesión caduca por inactividad
+    ok 3 - la sesión caduca por inactividad
+      ---
+      duration_ms: 24.249795
+      type: 'test'
+      ...
+    1..3
+ok 4 - SLA y volumen
+  ---
+  duration_ms: 839.230461
+  type: 'suite'
+  ...
+1..4
+# tests 41
+# suites 4
+# pass 41
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 1593.872264

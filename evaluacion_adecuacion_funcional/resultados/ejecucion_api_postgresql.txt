@@ -1,0 +1,338 @@
+============================================================
+ EVALUACIÓN DE ADECUACIÓN FUNCIONAL — TingoCargo
+ Backend: http://localhost:4100   Almacenamiento: postgresql
+ Inicio: 18/11/2026, 11:19:13 p. m. (hora de Lima)
+============================================================
+Datos de prueba preparados (sufijo 1jfs1).
+
+PASA  CP-03 [RF-02] Operador registra un paquete con datos completos
+       Esperado: HTTP 201, código TM-AAAA-NNNN, estado «En Almacén» y operador autoasignado
+       Obtenido: HTTP 201 — código TM-2026-9990, estado «En Almacén», operadorId=2
+PASA  CP-04 [RF-02] Registro de paquete sin sucursal de destino
+       Esperado: HTTP 400 indicando el campo obligatorio faltante
+       Obtenido: HTTP 400 — "destinatarioId, sucursalOrigenId, sucursalDestinoId, destinoTexto, descripcion, operadorId y repartidorId son requeridos"
+PASA  CP-05 [RF-02] Tarifa automática para paquete de hasta 2 kg
+       Esperado: precioEnvio = 10
+       Obtenido: precioEnvio = 10
+PASA  CP-06 [RF-02] Registro con distribuidora remitente inexistente
+       Esperado: HTTP 400 «Remitente o cliente invalido»
+       Obtenido: HTTP 400 — "Remitente o cliente invalido"
+PASA  CP-01 [RF-01] Consulta pública con código válido (sin autenticación)
+       Esperado: HTTP 200 con estado actual e historial
+       Obtenido: HTTP 200 — estado «En Almacén», 1 registro(s) de historial
+PASA  CP-02 [RF-01] Consulta pública con código inexistente
+       Esperado: HTTP 404 «Código no encontrado»
+       Obtenido: HTTP 404 — "Código no encontrado"
+PASA  CP-07 [RF-03] Operador registra la salida del paquete
+       Esperado: HTTP 200 y estado «En Tránsito»
+       Obtenido: HTTP 200 — estado «En Tránsito»
+PASA  CP-08 [RF-03] Cambio a un estado no definido
+       Esperado: HTTP 400 «Estado inválido»
+       Obtenido: HTTP 400 — "Estado inválido"
+PASA  CP-09 [RF-03] Repartidor intenta marcar «En Tránsito»
+       Esperado: HTTP 403 (el repartidor solo registra entrega o intento fallido)
+       Obtenido: HTTP 403 — "Acción no permitida"
+PASA  CP-12 [RF-04] Línea de tiempo cronológica del paquete
+       Esperado: Historial En Almacén → En Tránsito → Entregado, fechas ascendentes
+       Obtenido: HTTP 200 — En Almacén → En Tránsito → Entregado (orden ascendente)
+FALLA CP-10 [RF-03] Retroceder un paquete ya entregado
+       Esperado: HTTP 400/409: transición no permitida (flujo En Almacén → En Tránsito → Entregado)
+       Obtenido: HTTP 200 — el paquete entregado vuelve a «En Almacén»
+FALLA CP-11 [RF-03] Repartidor confirma la entrega de un paquete que nunca salió del almacén
+       Esperado: HTTP 400/409: no puede entregarse sin haber pasado por «En Tránsito»
+       Obtenido: HTTP 200 — estado «Entregado» sin pasar por «En Tránsito»
+PASA  CP-14 [RF-05] Inicio de sesión válido de un usuario registrado
+       Esperado: HTTP 200 con token y rol «Operador logístico»
+       Obtenido: HTTP 200 — token emitido, rol «Operador logístico»
+PASA  CP-15 [RF-05] Inicio de sesión con contraseña incorrecta
+       Esperado: HTTP 401 sin token
+       Obtenido: HTTP 401 — "Credenciales inválidas. 4 intentos restantes."
+PASA  CP-16 [RF-05] Bloqueo tras 5 intentos fallidos
+       Esperado: HTTP 429 en el sexto intento (cuenta bloqueada 15 min)
+       Obtenido: HTTP 429 — "Demasiados intentos. Cuenta bloqueada por 15 minutos."
+PASA  CP-17 [RF-05] Acceso con token inválido
+       Esperado: HTTP 401
+       Obtenido: HTTP 401 — "No autorizado"
+PASA  CP-25 [RF-07] Roles básicos asegurados al arrancar
+       Esperado: Administrador, Operador logístico, Repartidor y Cliente
+       Obtenido: HTTP 200 — Administrador, Operador logístico, Repartidor, Cliente
+PASA  CP-26 [RF-07] Crear usuario con un rol inexistente
+       Esperado: HTTP 400 «Rol inválido»
+       Obtenido: HTTP 400 — "Rol inválido"
+PASA  CP-27 [RF-08] Operador registra un cliente (persona)
+       Esperado: HTTP 201 con teléfono en formato E.164 (+51…)
+       Obtenido: HTTP 201 — id 4, teléfono +51965907265
+PASA  CP-28 [RF-08] Registro de cliente con teléfono de longitud inválida
+       Esperado: HTTP 400 «El telefono para Peru debe tener 9 digitos»
+       Obtenido: HTTP 400 — "El telefono para Peru debe tener 9 digitos"
+FALLA CP-29 [RF-08] Registro de un cliente con un DNI ya registrado
+       Esperado: HTTP 400/409: el documento ya pertenece a un cliente (no se duplica)
+       Obtenido: HTTP 201 — se creó un segundo cliente (id 5) con el mismo DNI
+PASA  CP-30 [RF-08] Consulta del listado de clientes
+       Esperado: HTTP 200 con el cliente registrado y su documento legible
+       Obtenido: HTTP 200 — 5 clientes; documento del registrado: 43545836
+PASA  CP-31 [RF-09] Administrador registra una distribuidora
+       Esperado: HTTP 201
+       Obtenido: HTTP 201 — id 2
+PASA  CP-32 [RF-09] Operador intenta registrar una distribuidora
+       Esperado: HTTP 403 (solo administrador)
+       Obtenido: HTTP 403 — "Solo administrador"
+PASA  CP-33 [RF-09] Registro de distribuidora sin razón social
+       Esperado: HTTP 400
+       Obtenido: HTTP 400 — "nombre, razonSocial, telefonoPais, telefonoNumero y direccion son requeridos"
+PASA  CP-34 [RF-09] Consulta del listado de distribuidoras
+       Esperado: HTTP 200 con la distribuidora registrada y teléfono legible
+       Obtenido: HTTP 200 — teléfono de la registrada: +51907227501
+PASA  CP-35 [RF-10] Administrador registra una sucursal
+       Esperado: HTTP 201
+       Obtenido: HTTP 201 — id 3
+PASA  CP-36 [RF-10] Registro de sucursal sin dirección
+       Esperado: HTTP 400 «nombre y direccion son requeridos»
+       Obtenido: HTTP 400 — "nombre y direccion son requeridos"
+PASA  CP-37 [RF-10] Operador intenta registrar una sucursal
+       Esperado: HTTP 403
+       Obtenido: HTTP 403 — "Solo administrador"
+PASA  CP-38 [RF-10] Consulta del listado de sucursales
+       Esperado: HTTP 200 con la sucursal registrada y dirección legible
+       Obtenido: HTTP 200 — dirección de la registrada: «Av. Principal s/n, Aucayacu»
+PASA  CP-39 [RF-11] Administrador asigna un operador
+       Esperado: HTTP 200 con operadorId = Operador B
+       Obtenido: HTTP 200 — operadorId=3
+PASA  CP-40 [RF-11] Asignar como operador a un usuario que es repartidor
+       Esperado: HTTP 400 «El usuario debe ser operador logístico»
+       Obtenido: HTTP 400 — "El usuario debe ser operador logístico"
+PASA  CP-41 [RF-11] Operador se autoasigna un paquete sin operador
+       Esperado: HTTP 200 con operadorId = Operador A
+       Obtenido: HTTP 200 — operadorId=2
+PASA  CP-42 [RF-11] Operador intenta asignar el paquete a otro operador
+       Esperado: HTTP 403 «Solo puedes asignarte a ti mismo»
+       Obtenido: HTTP 403 — "Solo puedes asignarte a ti mismo"
+FALLA CP-43 [RF-11] Operador B quita la asignación de un paquete del Operador A
+       Esperado: HTTP 403: un operador solo puede autoasignarse, no desasignar a otro
+       Obtenido: HTTP 200 — el paquete queda sin operador (operadorId=null)
+PASA  CP-44 [RF-12] Operador del paquete asigna otro repartidor
+       Esperado: HTTP 200 con repartidorId = Repartidor B
+       Obtenido: HTTP 200 — repartidorId=5
+PASA  CP-45 [RF-12] Asignar como repartidor a un operador
+       Esperado: HTTP 400 «El usuario debe ser repartidor»
+       Obtenido: HTTP 400 — "El usuario debe ser repartidor"
+PASA  CP-46 [RF-12] Operador ajeno al paquete intenta asignar repartidor
+       Esperado: HTTP 403
+       Obtenido: HTTP 403 — "Solo puedes asignar repartidor a paquetes donde eres el operador"
+PASA  CP-47 [RF-13] Repartidor consulta «Mis entregas»
+       Esperado: HTTP 200 solo con paquetes asignados al Repartidor A
+       Obtenido: HTTP 200 — 3 paquetes, todos del Repartidor A
+PASA  CP-48 [RF-13] Operador intenta usar la vista «Mis entregas»
+       Esperado: HTTP 403
+       Obtenido: HTTP 403 — "No autorizado"
+PASA  CP-49 [RF-13] Repartidor intenta ver un paquete que no tiene asignado
+       Esperado: HTTP 403
+       Obtenido: HTTP 403 — "No autorizado"
+PASA  CP-51 [RF-14] Repartidor registra un intento fallido con observación
+       Esperado: HTTP 200, estado «Intento fallido» y observación en el historial
+       Obtenido: HTTP 200 — estado «Intento fallido», última observación «Cliente ausente»
+PASA  CP-52 [RF-14] Repartidor no asignado intenta registrar un intento fallido
+       Esperado: HTTP 403
+       Obtenido: HTTP 403 — "No autorizado"
+PASA  CP-13 [RF-04] Seguimiento público muestra el historial con observaciones
+       Esperado: Historial con «Intento fallido» y la observación «Cliente ausente»
+       Obtenido: HTTP 200 — último registro «Intento fallido» / «Cliente ausente»
+PASA  CP-53 [RF-15] Administrador descarga el reporte CSV
+       Esperado: HTTP 200, text/csv con cabeceras y los paquetes registrados
+       Obtenido: HTTP 200 — text/csv; charset=utf-8, 5 filas de datos
+PASA  CP-54 [RF-15] Administrador descarga el reporte Excel (.xlsx)
+       Esperado: HTTP 200 con un libro Excel válido
+       Obtenido: HTTP 200 — 23898 bytes, firma XLSX válida
+PASA  CP-55 [RF-15] Operador intenta descargar el reporte
+       Esperado: HTTP 403 (solo administrador)
+       Obtenido: HTTP 403 — "Solo administrador"
+PASA  CP-56 [RF-15] Reporte en formato no soportado
+       Esperado: HTTP 400 «Formato no soportado»
+       Obtenido: HTTP 400 — "Formato no soportado"
+PASA  CP-57 [RF-16] El detalle del paquete entrega el teléfono del operador asignado
+       Esperado: operador.telefono = +51983426245
+       Obtenido: operador.telefono = +51983426245
+PASA  CP-59 [RF-17] El detalle del paquete entrega el teléfono del repartidor asignado
+       Esperado: repartidor.telefono = +51936583754
+       Obtenido: repartidor.telefono = +51936583754
+PASA  CP-61 [RF-18] El detalle del paquete entrega el teléfono del cliente destinatario
+       Esperado: destinatario.telefono = +51980011072
+       Obtenido: destinatario.telefono = +51980011072
+PASA  CP-65 [RF-20] Ruta protegida sin token
+       Esperado: HTTP 401
+       Obtenido: HTTP 401 — "No autorizado"
+PASA  CP-66 [RF-20] Operador intenta listar usuarios
+       Esperado: HTTP 403 «Solo administrador»
+       Obtenido: HTTP 403 — "Solo administrador"
+PASA  CP-67 [RF-20] Repartidor intenta registrar un paquete
+       Esperado: HTTP 403
+       Obtenido: HTTP 403 — "No autorizado"
+PASA  CP-68 [RF-20] Cliente intenta ver el detalle de un paquete ajeno
+       Esperado: HTTP 403
+       Obtenido: HTTP 403 — "No autorizado"
+FALLA CP-69 [RF-20] Cliente cambia el estado de un paquete ajeno a «Entregado»
+       Esperado: HTTP 403: el cliente no puede modificar estados
+       Obtenido: HTTP 200 — el paquete TM-2026-8481 queda «Entregado»
+FALLA CP-70 [RF-20] Cliente registra un paquete por el endpoint administrativo
+       Esperado: HTTP 403 (registro reservado a Administrador y Operador)
+       Obtenido: HTTP 201 — paquete TM-2026-5291 creado a nombre de la distribuidora
+PASA  CP-72 [FD-01] Autoregistro de un cliente nuevo en el portal
+       Esperado: HTTP 201 con token, rol «Cliente» y clienteId
+       Obtenido: HTTP 201 — rol «Cliente», clienteId=6
+PASA  CP-73 [FD-01] Autoregistro con un email ya registrado
+       Esperado: HTTP 400 «El email ya está registrado»
+       Obtenido: HTTP 400 — "El email ya está registrado"
+FALLA CP-74 [FD-01] Destinatario que ya recibió envíos se registra con su DNI
+       Esperado: La cuenta se vincula al cliente existente y «Mis envíos» muestra sus paquetes
+       Obtenido: Se creó otro cliente (id 7 ≠ 1); «Mis envíos» muestra 0 paquete(s)
+PASA  CP-75 [FD-02] Cliente registra un envío a un destinatario existente
+       Esperado: HTTP 201, tipo «cliente_cliente», precio S/ 10
+       Obtenido: HTTP 201 — TM-2026-8249, tipo cliente_cliente, precio 10
+FALLA CP-76 [FD-02] Cliente agrega un destinatario nuevo desde «Enviar paquete»
+       Esperado: HTTP 201: el destinatario queda disponible para el envío
+       Obtenido: HTTP 403 — "No autorizado"
+PASA  CP-77 [FD-02] Cliente intenta enviarse un paquete a sí mismo
+       Esperado: HTTP 400 «El destinatario debe ser diferente al remitente»
+       Obtenido: HTTP 400 — "El destinatario debe ser diferente al remitente"
+PASA  CP-78 [FD-03] Cliente intenta pagar un envío que no le corresponde
+       Esperado: HTTP 403 «Solo el remitente puede pagar este paquete»
+       Obtenido: HTTP 403 — "Solo el remitente puede pagar este paquete"
+PASA  CP-79 [FD-03] Cliente intenta pagar un envío de más de 2 kg sin precio asignado
+       Esperado: HTTP 400 «El operador debe asignar el precio antes de pagar»
+       Obtenido: HTTP 400 — "El operador debe asignar el precio antes de pagar (paquete > 2 kg)"
+PASA  CP-81 [FD-04] Repartidor registra el pago en efectivo al entregar
+       Esperado: HTTP 200, pagado = true, método «efectivo»
+       Obtenido: HTTP 200 — pagado=true, método=efectivo
+PASA  CP-82 [FD-04] Intento de registrar dos veces el mismo pago
+       Esperado: HTTP 400 «El paquete ya está pagado»
+       Obtenido: HTTP 400 — "El paquete ya está pagado"
+PASA  CP-83 [FD-04] Repartidor no asignado intenta registrar el pago
+       Esperado: HTTP 403 «Solo el repartidor asignado puede registrar el pago»
+       Obtenido: HTTP 403 — "Solo el repartidor asignado puede registrar el pago"
+FALLA CP-80 [FD-03] Cliente elige «Efectivo: pagarás al momento de la entrega»
+       Esperado: El envío queda pendiente de cobro (pagado = false) hasta que el repartidor reciba el dinero
+       Obtenido: HTTP 200 — pagado=true, método=efectivo sin haberse cobrado
+PASA  CP-84 [FD-05] Destinatario reprograma la entrega desde el seguimiento público
+       Esperado: HTTP 200, estado «En Tránsito», fecha guardada y registro «Reprogramado para entrega»
+       Obtenido: HTTP 200 — estado «En Tránsito», fecha 2026-11-19, «Reprogramado para entrega»
+PASA  CP-85 [FD-05] Reprogramar un paquete que no tuvo intento fallido
+       Esperado: HTTP 400 «Solo se puede reprogramar un paquete con estado Intento fallido»
+       Obtenido: HTTP 400 — "Solo se puede reprogramar un paquete con estado Intento fallido"
+FALLA CP-86 [FD-05] Reprogramar la entrega para una fecha pasada
+       Esperado: HTTP 400: la nueva fecha debe ser hoy o posterior
+       Obtenido: HTTP 200 — reprogramado para 2026-11-17 y estado «En Tránsito»
+FALLA CP-87 [FD-05] Reprogramar con hora de fin anterior a la de inicio
+       Esperado: HTTP 400: rango horario inválido
+       Obtenido: HTTP 200 — ventana guardada 15:00–09:00
+PASA  CP-89 [FD-06] Cliente consulta «Mis envíos»
+       Esperado: HTTP 200 con sus envíos (como remitente o destinatario) y ninguno ajeno
+       Obtenido: HTTP 200 — 2 envío(s), todos propios
+PASA  CP-90 [FD-06] Cliente ve el detalle y la línea de tiempo de su envío
+       Esperado: HTTP 200 con historial
+       Obtenido: HTTP 200 — 1 registro(s) de historial
+PASA  CP-18 [RF-06] Administrador crea un repartidor con placa y vehículo
+       Esperado: HTTP 201 sin exponer la contraseña ni su hash
+       Obtenido: HTTP 201 — id 10, sin hash
+FALLA CP-19 [RF-06] Datos del usuario para el formulario de edición
+       Esperado: Teléfono legible en formato E.164 (+51936583754)
+       Obtenido: HTTP 200 — telefono = «enc:v1:IZIdHEC92sIxmFMyphXZCXlluc67W4+…»
+PASA  CP-21 [RF-06] Administrador edita el nombre de un usuario
+       Esperado: HTTP 200 con el nombre actualizado
+       Obtenido: HTTP 200 — nombre «Raúl Cárdenas Soto»
+FALLA CP-22 [RF-06] Crear un usuario con un email ya registrado
+       Esperado: HTTP 400/409 con mensaje «email ya registrado»
+       Obtenido: Sin respuesta tras 6 s (la petición queda colgada)
+PASA  CP-23 [RF-06] Eliminar un usuario sin paquetes
+       Esperado: HTTP 200 { ok: true }
+       Obtenido: HTTP 200
+FALLA CP-24 [RF-06] Eliminar un repartidor que tiene paquetes asignados
+       Esperado: Respuesta controlada (HTTP 400/409 con mensaje) sin dejar paquetes inconsistentes
+       Obtenido: Sin respuesta tras 6 s (la petición queda colgada)
+
+------------------------------------------------------------
+ Casos ejecutados: 81   Pasan: 67   Fallan: 14
+ Funciones con al menos un caso fallido: RF-03, RF-08, RF-11, RF-20, FD-01, FD-02, FD-03, FD-05, RF-06
+------------------------------------------------------------
+ CP-01  RF-01  PASA   Consulta pública con código válido (sin autenticación)
+ CP-02  RF-01  PASA   Consulta pública con código inexistente
+ CP-03  RF-02  PASA   Operador registra un paquete con datos completos
+ CP-04  RF-02  PASA   Registro de paquete sin sucursal de destino
+ CP-05  RF-02  PASA   Tarifa automática para paquete de hasta 2 kg
+ CP-06  RF-02  PASA   Registro con distribuidora remitente inexistente
+ CP-07  RF-03  PASA   Operador registra la salida del paquete
+ CP-08  RF-03  PASA   Cambio a un estado no definido
+ CP-09  RF-03  PASA   Repartidor intenta marcar «En Tránsito»
+ CP-10  RF-03  FALLA  Retroceder un paquete ya entregado
+ CP-11  RF-03  FALLA  Repartidor confirma la entrega de un paquete que nunca salió del almacén
+ CP-12  RF-04  PASA   Línea de tiempo cronológica del paquete
+ CP-13  RF-04  PASA   Seguimiento público muestra el historial con observaciones
+ CP-14  RF-05  PASA   Inicio de sesión válido de un usuario registrado
+ CP-15  RF-05  PASA   Inicio de sesión con contraseña incorrecta
+ CP-16  RF-05  PASA   Bloqueo tras 5 intentos fallidos
+ CP-17  RF-05  PASA   Acceso con token inválido
+ CP-18  RF-06  PASA   Administrador crea un repartidor con placa y vehículo
+ CP-19  RF-06  FALLA  Datos del usuario para el formulario de edición
+ CP-21  RF-06  PASA   Administrador edita el nombre de un usuario
+ CP-22  RF-06  FALLA  Crear un usuario con un email ya registrado
+ CP-23  RF-06  PASA   Eliminar un usuario sin paquetes
+ CP-24  RF-06  FALLA  Eliminar un repartidor que tiene paquetes asignados
+ CP-25  RF-07  PASA   Roles básicos asegurados al arrancar
+ CP-26  RF-07  PASA   Crear usuario con un rol inexistente
+ CP-27  RF-08  PASA   Operador registra un cliente (persona)
+ CP-28  RF-08  PASA   Registro de cliente con teléfono de longitud inválida
+ CP-29  RF-08  FALLA  Registro de un cliente con un DNI ya registrado
+ CP-30  RF-08  PASA   Consulta del listado de clientes
+ CP-31  RF-09  PASA   Administrador registra una distribuidora
+ CP-32  RF-09  PASA   Operador intenta registrar una distribuidora
+ CP-33  RF-09  PASA   Registro de distribuidora sin razón social
+ CP-34  RF-09  PASA   Consulta del listado de distribuidoras
+ CP-35  RF-10  PASA   Administrador registra una sucursal
+ CP-36  RF-10  PASA   Registro de sucursal sin dirección
+ CP-37  RF-10  PASA   Operador intenta registrar una sucursal
+ CP-38  RF-10  PASA   Consulta del listado de sucursales
+ CP-39  RF-11  PASA   Administrador asigna un operador
+ CP-40  RF-11  PASA   Asignar como operador a un usuario que es repartidor
+ CP-41  RF-11  PASA   Operador se autoasigna un paquete sin operador
+ CP-42  RF-11  PASA   Operador intenta asignar el paquete a otro operador
+ CP-43  RF-11  FALLA  Operador B quita la asignación de un paquete del Operador A
+ CP-44  RF-12  PASA   Operador del paquete asigna otro repartidor
+ CP-45  RF-12  PASA   Asignar como repartidor a un operador
+ CP-46  RF-12  PASA   Operador ajeno al paquete intenta asignar repartidor
+ CP-47  RF-13  PASA   Repartidor consulta «Mis entregas»
+ CP-48  RF-13  PASA   Operador intenta usar la vista «Mis entregas»
+ CP-49  RF-13  PASA   Repartidor intenta ver un paquete que no tiene asignado
+ CP-51  RF-14  PASA   Repartidor registra un intento fallido con observación
+ CP-52  RF-14  PASA   Repartidor no asignado intenta registrar un intento fallido
+ CP-53  RF-15  PASA   Administrador descarga el reporte CSV
+ CP-54  RF-15  PASA   Administrador descarga el reporte Excel (.xlsx)
+ CP-55  RF-15  PASA   Operador intenta descargar el reporte
+ CP-56  RF-15  PASA   Reporte en formato no soportado
+ CP-57  RF-16  PASA   El detalle del paquete entrega el teléfono del operador asignado
+ CP-59  RF-17  PASA   El detalle del paquete entrega el teléfono del repartidor asignado
+ CP-61  RF-18  PASA   El detalle del paquete entrega el teléfono del cliente destinatario
+ CP-65  RF-20  PASA   Ruta protegida sin token
+ CP-66  RF-20  PASA   Operador intenta listar usuarios
+ CP-67  RF-20  PASA   Repartidor intenta registrar un paquete
+ CP-68  RF-20  PASA   Cliente intenta ver el detalle de un paquete ajeno
+ CP-69  RF-20  FALLA  Cliente cambia el estado de un paquete ajeno a «Entregado»
+ CP-70  RF-20  FALLA  Cliente registra un paquete por el endpoint administrativo
+ CP-72  FD-01  PASA   Autoregistro de un cliente nuevo en el portal
+ CP-73  FD-01  PASA   Autoregistro con un email ya registrado
+ CP-74  FD-01  FALLA  Destinatario que ya recibió envíos se registra con su DNI
+ CP-75  FD-02  PASA   Cliente registra un envío a un destinatario existente
+ CP-76  FD-02  FALLA  Cliente agrega un destinatario nuevo desde «Enviar paquete»
+ CP-77  FD-02  PASA   Cliente intenta enviarse un paquete a sí mismo
+ CP-78  FD-03  PASA   Cliente intenta pagar un envío que no le corresponde
+ CP-79  FD-03  PASA   Cliente intenta pagar un envío de más de 2 kg sin precio asignado
+ CP-80  FD-03  FALLA  Cliente elige «Efectivo: pagarás al momento de la entrega»
+ CP-81  FD-04  PASA   Repartidor registra el pago en efectivo al entregar
+ CP-82  FD-04  PASA   Intento de registrar dos veces el mismo pago
+ CP-83  FD-04  PASA   Repartidor no asignado intenta registrar el pago
+ CP-84  FD-05  PASA   Destinatario reprograma la entrega desde el seguimiento público
+ CP-85  FD-05  PASA   Reprogramar un paquete que no tuvo intento fallido
+ CP-86  FD-05  FALLA  Reprogramar la entrega para una fecha pasada
+ CP-87  FD-05  FALLA  Reprogramar con hora de fin anterior a la de inicio
+ CP-89  FD-06  PASA   Cliente consulta «Mis envíos»
+ CP-90  FD-06  PASA   Cliente ve el detalle y la línea de tiempo de su envío
+------------------------------------------------------------
+ Resultados guardados en resultados/resultados_api_postgresql.json
