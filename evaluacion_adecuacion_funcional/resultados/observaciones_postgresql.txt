@@ -1,0 +1,35 @@
+$ curl -s http://localhost:4100/api/tracking/TM-2026-9990   # código en mayúsculas
+HTTP 200
+$ curl -s http://localhost:4100/api/tracking/tm-2026-9990   # mismo código en minúsculas
+{"error":"Código no encontrado"}  → HTTP 404
+
+$ curl -s http://localhost:4100/api/tracking/TM-2026-9990 | jq '{destinatario, operador, repartidor}'   # sin token
+{
+ "destinatario": {
+  "id": 1,
+  "nombre": "Carlos Mendoza",
+  "documento": "40402504",
+  "telefono": "+51980011072",
+  "email": "carlos.1jfs1@correo.pe",
+  "direccion": "Jr. Callao 456, Tingo María"
+ },
+ "operador": {
+  "id": 2,
+  "nombre": "Ana Torres",
+  "telefono": "+51983426245",
+  "email": "operador.a.1jfs1@tingocargo.pe"
+ },
+ "repartidor": {
+  "id": 4,
+  "nombre": "Pedro Quispe",
+  "telefono": "+51936583754",
+  "email": "repartidor.a.1jfs1@tingocargo.pe"
+ }
+}
+
+$ curl -s -H 'Authorization: Bearer <token admin>' http://localhost:4100/api/operators/phone
+{"telefono":"enc:v1:ZA1zOjLI6UNNJV+UU2skUyGiSVKoPy1mQaRGabLwlNpmlK4NvG1dvg=="}
+
+$ curl -s -m 6 -H 'Authorization: Bearer <token admin>' http://localhost:4100/api/packages/abc   # id no numérico
+HTTP 000
+  → sin respuesta tras 6 s (curl: timeout)

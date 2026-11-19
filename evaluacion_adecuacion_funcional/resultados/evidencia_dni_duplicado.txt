@@ -1,0 +1,18 @@
+$ curl -s -H 'Authorization: Bearer <token>' http://localhost:4100/api/clients | jq '[.[] | select(.documento=="43545836")]'
+[
+ {
+  "id": 5,
+  "tipo": "persona",
+  "nombre": "Julio Ramos Díaz",
+  "documento": "43545836",
+  "telefono": "+51961750503"
+ },
+ {
+  "id": 4,
+  "tipo": "persona",
+  "nombre": "Julio Ramos",
+  "documento": "43545836",
+  "telefono": "+51965907265"
+ }
+]
+# 2 clientes registrados con el mismo DNI 43545836

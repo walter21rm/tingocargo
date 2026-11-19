@@ -1,0 +1,42 @@
+<!doctype html><html><head><meta charset='utf-8'><style>
+body { margin:0; background:#e2e8f0; font-family:'DejaVu Sans Mono',monospace; }
+.ventana { margin:14px; border-radius:10px; overflow:hidden; box-shadow:0 6px 18px rgba(15,23,42,.35); }
+.barra { background:#1e293b; color:#cbd5e1; font:600 13px 'DejaVu Sans',sans-serif; padding:9px 14px; display:flex; align-items:center; gap:8px; }
+.p { width:12px; height:12px; border-radius:50%; display:inline-block; }
+pre { margin:0; background:#0f172a; color:#e2e8f0; padding:14px 18px; font-size:13px; line-height:18px; white-space:pre-wrap; word-break:break-word; }
+.ok { color:#4ade80; font-weight:bold; } .ko { color:#f87171; font-weight:bold; }
+.dim { color:#94a3b8; } .cmd { color:#facc15; } .titulo { color:#38bdf8; font-weight:bold; }
+</style></head>
+<body><div class='ventana'><div class='barra'><span class='p' style='background:#ef4444'></span>
+<span class='p' style='background:#f59e0b'></span><span class='p' style='background:#22c55e'></span>
+&nbsp;evaluacion$ node pruebas/casos_ui.mjs  — casos de interfaz (Chrome)</div><pre>Paquetes de interfaz preparados: TM-2026-7157 TM-2026-1041 TM-2026-6226
+<span class='ko'>FALLA</span> CP-88 [FD-05] La fecha de la entrega reprogramada se muestra en el seguimiento
+<span class='dim'>       Esperado:</span> «Próxima entrega programada» muestra la fecha (día, mes y año) y la ventana horaria
+<span class='dim'>       Obtenido:</span> Se muestra «Próxima entrega programada Invalid Date • 09:00 — 12:00 Jr. Callao 999, Tingo María»
+<span class='ko'>FALLA</span> CP-71 [RF-20] Repartidor inicia sesión en el panel
+<span class='dim'>       Esperado:</span> Llega a una vista permitida para su rol (por ejemplo «Mis entregas»)
+<span class='dim'>       Obtenido:</span> Ruta /admin: el guardián de ruta redirige a la misma ruta y el área principal queda vacía
+<span class='ok'>PASA </span> CP-50 [RF-13] Repartidor abre «Mis entregas» desde el menú
+<span class='dim'>       Esperado:</span> Título «Mis entregas» y solo paquetes asignados al repartidor
+<span class='dim'>       Obtenido:</span> Título «Mis entregas»; incluye TM-2026-9990 (propio) y no incluye TM-2026-5730 (de otro repartidor)
+<span class='ok'>PASA </span> CP-58 [RF-16] Botón «Llamar» del operador en el detalle del paquete
+<span class='dim'>       Esperado:</span> Enlace de llamada (tel:) al teléfono del operador asignado (+51983426245)
+<span class='dim'>       Obtenido:</span> Enlace tel:51983426245 («Llamar a Ana Torres»)
+<span class='ok'>PASA </span> CP-60 [RF-17] Botón «Llamar» del repartidor en el detalle del paquete
+<span class='dim'>       Esperado:</span> Enlace de llamada (tel:) al teléfono del repartidor asignado (+51936583754)
+<span class='dim'>       Obtenido:</span> Enlace tel:51936583754 («Llamar a Pedro Quispe»)
+<span class='ok'>PASA </span> CP-62 [RF-18] Botón «Llamar» del cliente en el detalle del paquete
+<span class='dim'>       Esperado:</span> Enlace de llamada (tel:) al teléfono del cliente asignado (+51980011072)
+<span class='dim'>       Obtenido:</span> Enlace tel:51980011072 («Llamar a Carlos Mendoza»)
+<span class='ok'>PASA </span> CP-63 [RF-19] «Ver ubicación en mapa» con dirección completa
+<span class='dim'>       Esperado:</span> Abre Google Maps (maps/search, api=1) con la dirección de entrega
+<span class='dim'>       Obtenido:</span> Abre https://www.google.com/maps/search/?api=1&amp;query=Jr.%20Callao%20456%2C%20Tingo%20Mar%C3%ADa
+<span class='ok'>PASA </span> CP-64 [RF-19] «Ver ubicación en mapa» con dirección sin ciudad
+<span class='dim'>       Esperado:</span> La consulta se completa con la dirección de la sucursal de destino
+<span class='dim'>       Obtenido:</span> Consulta «Jr. Los Pinos 145, Jr. Monzón 456, Tingo María»
+<span class='ko'>FALLA</span> CP-20 [RF-06] El formulario de edición precarga el teléfono del usuario
+<span class='dim'>       Esperado:</span> El campo teléfono muestra el número registrado (9 dígitos) y el país
+<span class='dim'>       Obtenido:</span> Campo teléfono vacío: el número registrado no se precarga
+
+Casos de interfaz: 9   Pasan: 6   Fallan: 3
+Capturas: 38</pre></div></body></html>

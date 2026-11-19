@@ -1,0 +1,69 @@
+Paquetes de interfaz preparados: TM-2026-7157 TM-2026-1041 TM-2026-6226
+  captura → E01_inicio_publico.png
+  captura → E02_seguimiento_publico.png
+  captura → D14_fecha_reprogramada_invalida.png
+FALLA CP-88 [FD-05] La fecha de la entrega reprogramada se muestra en el seguimiento
+       Esperado: «Próxima entrega programada» muestra la fecha (día, mes y año) y la ventana horaria
+       Obtenido: Se muestra «Próxima entrega programada Invalid Date • 09:00 — 12:00 Jr. Callao 999, Tingo María»
+  captura → D03_seguimiento_marcado_por_cliente.png
+  captura → E03_login_panel.png
+  captura → D01_repartidor_pantalla_vacia.png
+FALLA CP-71 [RF-20] Repartidor inicia sesión en el panel
+       Esperado: Llega a una vista permitida para su rol (por ejemplo «Mis entregas»)
+       Obtenido: Ruta /admin: el guardián de ruta redirige a la misma ruta y el área principal queda vacía
+  captura → E09_mis_entregas_repartidor.png
+PASA  CP-50 [RF-13] Repartidor abre «Mis entregas» desde el menú
+       Esperado: Título «Mis entregas» y solo paquetes asignados al repartidor
+       Obtenido: Título «Mis entregas»; incluye TM-2026-9990 (propio) y no incluye TM-2026-5730 (de otro repartidor)
+  captura → E08_intento_fallido_modal.png
+  captura → E08b_intento_fallido_registrado.png
+  captura → E04_dashboard_operador.png
+  captura → E06_detalle_paquete.png
+PASA  CP-58 [RF-16] Botón «Llamar» del operador en el detalle del paquete
+       Esperado: Enlace de llamada (tel:) al teléfono del operador asignado (+51983426245)
+       Obtenido: Enlace tel:51983426245 («Llamar a Ana Torres»)
+PASA  CP-60 [RF-17] Botón «Llamar» del repartidor en el detalle del paquete
+       Esperado: Enlace de llamada (tel:) al teléfono del repartidor asignado (+51936583754)
+       Obtenido: Enlace tel:51936583754 («Llamar a Pedro Quispe»)
+PASA  CP-62 [RF-18] Botón «Llamar» del cliente en el detalle del paquete
+       Esperado: Enlace de llamada (tel:) al teléfono del cliente asignado (+51980011072)
+       Obtenido: Enlace tel:51980011072 («Llamar a Carlos Mendoza»)
+  captura → E07_acciones_llamar.png
+PASA  CP-63 [RF-19] «Ver ubicación en mapa» con dirección completa
+       Esperado: Abre Google Maps (maps/search, api=1) con la dirección de entrega
+       Obtenido: Abre https://www.google.com/maps/search/?api=1&query=Jr.%20Callao%20456%2C%20Tingo%20Mar%C3%ADa
+  captura → E10_google_maps.png
+PASA  CP-64 [RF-19] «Ver ubicación en mapa» con dirección sin ciudad
+       Esperado: La consulta se completa con la dirección de la sucursal de destino
+       Obtenido: Consulta «Jr. Los Pinos 145, Jr. Monzón 456, Tingo María»
+  captura → E05_registro_paquete_formulario.png
+  captura → E05b_registro_paquete_creado.png
+  captura → E11_paquetes_reporte.png
+  captura → E12_usuarios.png
+  captura → E13_clientes.png
+  captura → E14_distribuidoras.png
+  captura → E15_sucursales.png
+  captura → D04_retroceso_entregado.png
+  captura → D05_entrega_sin_transito.png
+  captura → D06_operador_desasignado.png
+  captura → D02_actividad_cliente_cambia_estado.png
+  captura → D07_edicion_usuario_telefono.png
+  captura → D07b_edicion_usuario_error.png
+FALLA CP-20 [RF-06] El formulario de edición precarga el teléfono del usuario
+       Esperado: El campo teléfono muestra el número registrado (9 dígitos) y el país
+       Obtenido: Campo teléfono vacío: el número registrado no se precarga
+  captura → D08_usuario_email_duplicado.png
+  captura → D09_eliminar_repartidor_con_paquetes.png
+  captura → E16_portal_mis_envios.png
+  captura → E17_portal_enviar_paquete.png
+  captura → D10_portal_agregar_destinatario.png
+  captura → D11a_portal_efectivo_mensaje.png
+  captura → D11b_portal_efectivo_pagado.png
+  captura → D11c_panel_pago_registrado.png
+  captura → D12_destinatario_sin_envios.png
+  captura → E18a_seguimiento_intento_fallido.png
+  captura → E18_reprogramar_modal.png
+  captura → D13_reprogramacion_fecha_pasada.png
+
+Casos de interfaz: 9   Pasan: 6   Fallan: 3
+Capturas: 38

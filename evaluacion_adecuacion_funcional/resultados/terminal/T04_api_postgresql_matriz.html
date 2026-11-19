@@ -1,0 +1,104 @@
+<!doctype html><html><head><meta charset='utf-8'><style>
+body { margin:0; background:#e2e8f0; font-family:'DejaVu Sans Mono',monospace; }
+.ventana { margin:14px; border-radius:10px; overflow:hidden; box-shadow:0 6px 18px rgba(15,23,42,.35); }
+.barra { background:#1e293b; color:#cbd5e1; font:600 13px 'DejaVu Sans',sans-serif; padding:9px 14px; display:flex; align-items:center; gap:8px; }
+.p { width:12px; height:12px; border-radius:50%; display:inline-block; }
+pre { margin:0; background:#0f172a; color:#e2e8f0; padding:14px 18px; font-size:13px; line-height:18px; white-space:pre-wrap; word-break:break-word; }
+.ok { color:#4ade80; font-weight:bold; } .ko { color:#f87171; font-weight:bold; }
+.dim { color:#94a3b8; } .cmd { color:#facc15; } .titulo { color:#38bdf8; font-weight:bold; }
+</style></head>
+<body><div class='ventana'><div class='barra'><span class='p' style='background:#ef4444'></span>
+<span class='p' style='background:#f59e0b'></span><span class='p' style='background:#22c55e'></span>
+&nbsp;evaluacion$ node pruebas/casos_api.mjs modo=postgresql  — resumen de los 81 casos de API</div><pre><span class='dim'>============================================================</span>
+<span class='titulo'> EVALUACIÓN DE ADECUACIÓN FUNCIONAL — TingoCargo</span>
+ Backend: http://localhost:4100   Almacenamiento: postgresql
+ Inicio: 18/11/2026, 11:19:13 p. m. (hora de Lima)
+<span class='dim'>============================================================</span>
+
+<span class='dim'>------------------------------------------------------------</span>
+ Casos ejecutados: 81   Pasan: 67   Fallan: 14
+ Funciones con al menos un caso fallido: RF-03, RF-08, RF-11, RF-20, FD-01, FD-02, FD-03, FD-05, RF-06
+<span class='dim'>------------------------------------------------------------</span>
+ CP-01  RF-01  <span class='ok'>PASA </span>  Consulta pública con código válido (sin autenticación)
+ CP-02  RF-01  <span class='ok'>PASA </span>  Consulta pública con código inexistente
+ CP-03  RF-02  <span class='ok'>PASA </span>  Operador registra un paquete con datos completos
+ CP-04  RF-02  <span class='ok'>PASA </span>  Registro de paquete sin sucursal de destino
+ CP-05  RF-02  <span class='ok'>PASA </span>  Tarifa automática para paquete de hasta 2 kg
+ CP-06  RF-02  <span class='ok'>PASA </span>  Registro con distribuidora remitente inexistente
+ CP-07  RF-03  <span class='ok'>PASA </span>  Operador registra la salida del paquete
+ CP-08  RF-03  <span class='ok'>PASA </span>  Cambio a un estado no definido
+ CP-09  RF-03  <span class='ok'>PASA </span>  Repartidor intenta marcar «En Tránsito»
+ CP-10  RF-03  <span class='ko'>FALLA</span>  Retroceder un paquete ya entregado
+ CP-11  RF-03  <span class='ko'>FALLA</span>  Repartidor confirma la entrega de un paquete que nunca salió del almacén
+ CP-12  RF-04  <span class='ok'>PASA </span>  Línea de tiempo cronológica del paquete
+ CP-13  RF-04  <span class='ok'>PASA </span>  Seguimiento público muestra el historial con observaciones
+ CP-14  RF-05  <span class='ok'>PASA </span>  Inicio de sesión válido de un usuario registrado
+ CP-15  RF-05  <span class='ok'>PASA </span>  Inicio de sesión con contraseña incorrecta
+ CP-16  RF-05  <span class='ok'>PASA </span>  Bloqueo tras 5 intentos fallidos
+ CP-17  RF-05  <span class='ok'>PASA </span>  Acceso con token inválido
+ CP-18  RF-06  <span class='ok'>PASA </span>  Administrador crea un repartidor con placa y vehículo
+ CP-19  RF-06  <span class='ko'>FALLA</span>  Datos del usuario para el formulario de edición
+ CP-21  RF-06  <span class='ok'>PASA </span>  Administrador edita el nombre de un usuario
+ CP-22  RF-06  <span class='ko'>FALLA</span>  Crear un usuario con un email ya registrado
+ CP-23  RF-06  <span class='ok'>PASA </span>  Eliminar un usuario sin paquetes
+ CP-24  RF-06  <span class='ko'>FALLA</span>  Eliminar un repartidor que tiene paquetes asignados
+ CP-25  RF-07  <span class='ok'>PASA </span>  Roles básicos asegurados al arrancar
+ CP-26  RF-07  <span class='ok'>PASA </span>  Crear usuario con un rol inexistente
+ CP-27  RF-08  <span class='ok'>PASA </span>  Operador registra un cliente (persona)
+ CP-28  RF-08  <span class='ok'>PASA </span>  Registro de cliente con teléfono de longitud inválida
+ CP-29  RF-08  <span class='ko'>FALLA</span>  Registro de un cliente con un DNI ya registrado
+ CP-30  RF-08  <span class='ok'>PASA </span>  Consulta del listado de clientes
+ CP-31  RF-09  <span class='ok'>PASA </span>  Administrador registra una distribuidora
+ CP-32  RF-09  <span class='ok'>PASA </span>  Operador intenta registrar una distribuidora
+ CP-33  RF-09  <span class='ok'>PASA </span>  Registro de distribuidora sin razón social
+ CP-34  RF-09  <span class='ok'>PASA </span>  Consulta del listado de distribuidoras
+ CP-35  RF-10  <span class='ok'>PASA </span>  Administrador registra una sucursal
+ CP-36  RF-10  <span class='ok'>PASA </span>  Registro de sucursal sin dirección
+ CP-37  RF-10  <span class='ok'>PASA </span>  Operador intenta registrar una sucursal
+ CP-38  RF-10  <span class='ok'>PASA </span>  Consulta del listado de sucursales
+ CP-39  RF-11  <span class='ok'>PASA </span>  Administrador asigna un operador
+ CP-40  RF-11  <span class='ok'>PASA </span>  Asignar como operador a un usuario que es repartidor
+ CP-41  RF-11  <span class='ok'>PASA </span>  Operador se autoasigna un paquete sin operador
+ CP-42  RF-11  <span class='ok'>PASA </span>  Operador intenta asignar el paquete a otro operador
+ CP-43  RF-11  <span class='ko'>FALLA</span>  Operador B quita la asignación de un paquete del Operador A
+ CP-44  RF-12  <span class='ok'>PASA </span>  Operador del paquete asigna otro repartidor
+ CP-45  RF-12  <span class='ok'>PASA </span>  Asignar como repartidor a un operador
+ CP-46  RF-12  <span class='ok'>PASA </span>  Operador ajeno al paquete intenta asignar repartidor
+ CP-47  RF-13  <span class='ok'>PASA </span>  Repartidor consulta «Mis entregas»
+ CP-48  RF-13  <span class='ok'>PASA </span>  Operador intenta usar la vista «Mis entregas»
+ CP-49  RF-13  <span class='ok'>PASA </span>  Repartidor intenta ver un paquete que no tiene asignado
+ CP-51  RF-14  <span class='ok'>PASA </span>  Repartidor registra un intento fallido con observación
+ CP-52  RF-14  <span class='ok'>PASA </span>  Repartidor no asignado intenta registrar un intento fallido
+ CP-53  RF-15  <span class='ok'>PASA </span>  Administrador descarga el reporte CSV
+ CP-54  RF-15  <span class='ok'>PASA </span>  Administrador descarga el reporte Excel (.xlsx)
+ CP-55  RF-15  <span class='ok'>PASA </span>  Operador intenta descargar el reporte
+ CP-56  RF-15  <span class='ok'>PASA </span>  Reporte en formato no soportado
+ CP-57  RF-16  <span class='ok'>PASA </span>  El detalle del paquete entrega el teléfono del operador asignado
+ CP-59  RF-17  <span class='ok'>PASA </span>  El detalle del paquete entrega el teléfono del repartidor asignado
+ CP-61  RF-18  <span class='ok'>PASA </span>  El detalle del paquete entrega el teléfono del cliente destinatario
+ CP-65  RF-20  <span class='ok'>PASA </span>  Ruta protegida sin token
+ CP-66  RF-20  <span class='ok'>PASA </span>  Operador intenta listar usuarios
+ CP-67  RF-20  <span class='ok'>PASA </span>  Repartidor intenta registrar un paquete
+ CP-68  RF-20  <span class='ok'>PASA </span>  Cliente intenta ver el detalle de un paquete ajeno
+ CP-69  RF-20  <span class='ko'>FALLA</span>  Cliente cambia el estado de un paquete ajeno a «Entregado»
+ CP-70  RF-20  <span class='ko'>FALLA</span>  Cliente registra un paquete por el endpoint administrativo
+ CP-72  FD-01  <span class='ok'>PASA </span>  Autoregistro de un cliente nuevo en el portal
+ CP-73  FD-01  <span class='ok'>PASA </span>  Autoregistro con un email ya registrado
+ CP-74  FD-01  <span class='ko'>FALLA</span>  Destinatario que ya recibió envíos se registra con su DNI
+ CP-75  FD-02  <span class='ok'>PASA </span>  Cliente registra un envío a un destinatario existente
+ CP-76  FD-02  <span class='ko'>FALLA</span>  Cliente agrega un destinatario nuevo desde «Enviar paquete»
+ CP-77  FD-02  <span class='ok'>PASA </span>  Cliente intenta enviarse un paquete a sí mismo
+ CP-78  FD-03  <span class='ok'>PASA </span>  Cliente intenta pagar un envío que no le corresponde
+ CP-79  FD-03  <span class='ok'>PASA </span>  Cliente intenta pagar un envío de más de 2 kg sin precio asignado
+ CP-80  FD-03  <span class='ko'>FALLA</span>  Cliente elige «Efectivo: pagarás al momento de la entrega»
+ CP-81  FD-04  <span class='ok'>PASA </span>  Repartidor registra el pago en efectivo al entregar
+ CP-82  FD-04  <span class='ok'>PASA </span>  Intento de registrar dos veces el mismo pago
+ CP-83  FD-04  <span class='ok'>PASA </span>  Repartidor no asignado intenta registrar el pago
+ CP-84  FD-05  <span class='ok'>PASA </span>  Destinatario reprograma la entrega desde el seguimiento público
+ CP-85  FD-05  <span class='ok'>PASA </span>  Reprogramar un paquete que no tuvo intento fallido
+ CP-86  FD-05  <span class='ko'>FALLA</span>  Reprogramar la entrega para una fecha pasada
+ CP-87  FD-05  <span class='ko'>FALLA</span>  Reprogramar con hora de fin anterior a la de inicio
+ CP-89  FD-06  <span class='ok'>PASA </span>  Cliente consulta «Mis envíos»
+ CP-90  FD-06  <span class='ok'>PASA </span>  Cliente ve el detalle y la línea de tiempo de su envío
+<span class='dim'>------------------------------------------------------------</span>
+ Resultados guardados en resultados/resultados_api_postgresql.json</pre></div></body></html>

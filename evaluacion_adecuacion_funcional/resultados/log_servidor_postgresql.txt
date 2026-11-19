@@ -1,0 +1,35 @@
+1-API logística en http://localhost:4100
+2:Promesa no controlada: error: duplicate key value violates unique constraint "usuarios_email_key"
+3-    at /workspace/backend/node_modules/pg-pool/index.js:45:11
+4-    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+5-    at async createUser (file:///workspace/backend/src/storageDb.js:431:20)
+6-    at async file:///workspace/backend/src/server.js:1485:16 {
+7-  length: 231,
+24-}
+25:Promesa no controlada: error: update or delete on table "usuarios" violates foreign key constraint "paquetes_repartidor_id_fkey" on table "paquetes"
+26-    at /workspace/backend/node_modules/pg-pool/index.js:45:11
+27-    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+28-    at async deleteUser (file:///workspace/backend/src/storageDb.js:494:20)
+29-    at async file:///workspace/backend/src/server.js:1540:19 {
+30-  length: 291,
+47-}
+48:Promesa no controlada: error: duplicate key value violates unique constraint "usuarios_email_key"
+49-    at /workspace/backend/node_modules/pg-pool/index.js:45:11
+50-    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+51-    at async createUser (file:///workspace/backend/src/storageDb.js:431:20)
+52-    at async file:///workspace/backend/src/server.js:1485:16 {
+53-  length: 231,
+70-}
+71:Promesa no controlada: error: update or delete on table "usuarios" violates foreign key constraint "paquetes_repartidor_id_fkey" on table "paquetes"
+72-    at /workspace/backend/node_modules/pg-pool/index.js:45:11
+73-    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+74-    at async deleteUser (file:///workspace/backend/src/storageDb.js:494:20)
+75-    at async file:///workspace/backend/src/server.js:1540:19 {
+76-  length: 291,
+93-}
+94:Promesa no controlada: error: invalid input syntax for type integer: "abc"
+95-    at /workspace/backend/node_modules/pg-pool/index.js:45:11
+96-    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+97-    at async getPackageDetailsById (file:///workspace/backend/src/storageDb.js:671:20)
+98-    at async file:///workspace/backend/src/server.js:1026:15 {
+99-  length: 146,
